@@ -11,7 +11,11 @@
 1. 确定python 版本 3.7 以上
 2. 执行安装依赖
 ```bash
+<<<<<<< HEAD
 pip3 install -r requirements.txt -i  
+=======
+pip3 install -r requirements.txt -i  https://pypi.douban.com/simple/  
+>>>>>>> ok
 ```
 3. 填写env.py
 
