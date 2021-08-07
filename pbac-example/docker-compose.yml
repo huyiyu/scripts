@@ -1,0 +1,33 @@
+version: '3.1'
+services:
+  db:
+    image: mysql
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: "[>tRkC9SS+([l-x:ZX~Z"
+      MYSQL_DATABASE: "db_pbac"
+      MYSQL_USER: "pbac"
+      MYSQL_PASSWORD: "123456"
+    volumes:
+    - ./mysql_data:/var/lib/mysql
+    ports:
+      - 3306:3306
+  nacos:
+    image: nacos/nacos-server:latest
+    restart: always
+    environment:
+      MODE: standalone
+      NACOS_AUTH_ENABLE: true
+      NACOS_AUTH_TOKEN: Y25rRGJVZHd2QlU0cHFWTUd0WGJ4M2JDMmJmSlVWNXdBcUM0UERMaUxwRXZ2VHVUY2RJVWhPMGZtR3FnUDhIcm91aTdDT3FUbWdjN2JFWVFSSUs4SDQ2UER6T2c1ZlhJSWlSUmRXeDF3U0dxNnYyZHRLOGVwNnRmbUhyNktjZnRKTlRab0dLZW1FNHJIUEhzRURaN29YWXhIUGZiblZVbGhiYUkzRG1hRlF1ZVVJbGNsbk5pNmxNM2tOSGtDUm9oakROb050V3NsMEh5bXNKOXV2R0l0YnhVeXZCYlpoNWxqZ0h3Nm16eXdiZ2RoZWhNajQxRTc2V1o3YlhXeUxVSQo=
+      NACOS_AUTH_IDENTITY_VALUE: K5zJ03l8b454GMIysITexYvXoQLeDumuERnb9Fw9P9l6CLlTX6iS2jdQZuutZ8cPazPqEudAbU3esoN6VeHINDBZshuMYaOPta7KK0x2ZtQy2z3bWdbiIkF9aaiG4UtKzV9wAmFzlOurLdVINLg9RSfYKTR0QbmCkuGGT22ZdZ66ut0aFnzJXkUJRT7LCXX98MV6olVFBhJjHUAVQXOSMLqaY1mBsNNP6tz0mXX0YaAoNYqykJGLsSlytsn7wnc1
+      nacos.core.auth.server.identity.key: Y25rRGJVZHd2QlU0cHFWTUd0WGJ4M2JDMmJmSlVWNXdBcUM0UERMaUxwRXZ2VHVUY2RJVWhPMGZtR3FnUDhIcm91aTdDT3FUbWdjN2JFWVFSSUs4SDQ2UER6T2c1ZlhJSWlSUmRXeDF3U0dxNnYyZHRLOGVwNnRmbUhyNktjZnRKTlRab0dLZW1FNHJIUEhzRURaN29YWXhIUGZiblZVbGhiYUkzRG1hRlF1ZVVJbGNsbk5pNmxNM2tOSGtDUm9oakROb050V3NsMEh5bXNKOXV2R0l0YnhVeXZCYlpoNWxqZ0h3Nm16eXdiZ2RoZWhNajQxRTc2V1o3YlhXeUxVSQo=
+      nacos.core.auth.server.identity.value: K5zJ03l8b454GMIysITexYvXoQLeDumuERnb9Fw9P9l6CLlTX6iS2jdQZuutZ8cPazPqEudAbU3esoN6VeHINDBZshuMYaOPta7KK0x2ZtQy2z3bWdbiIkF9aaiG4UtKzV9wAmFzlOurLdVINLg9RSfYKTR0QbmCkuGGT22ZdZ66ut0aFnzJXkUJRT7LCXX98MV6olVFBhJjHUAVQXOSMLqaY1mBsNNP6tz0mXX0YaAoNYqykJGLsSlytsn7wnc1
+    ports:
+      - 8848:8848
+      - 9848:9848
+  nginx:
+    image: nginx:1.25.1-alpine
+    restart: always
+    network_mode: host
+    volumes:
+      - ./biz.conf:/etc/nginx/conf.d/biz.conf

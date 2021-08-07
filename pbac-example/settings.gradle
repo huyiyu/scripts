@@ -1,0 +1,5 @@
+rootProject.name = 'pbac-example'
+include ':pbac-core'
+include ':pbac-gateway'
+include ':pbac-engine'
+include ':pbac-biz'

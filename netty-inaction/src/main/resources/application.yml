@@ -1,0 +1,17 @@
+netty:
+  port: 9000
+spring:
+  application:
+    name: server1
+  kafka:
+    admin:
+      fail-fast: true
+    producer:
+      bootstrap-servers: localhost:9092
+    consumer:
+      bootstrap-servers: localhost:9092
+      group-id: ${spring.application.name}
+logging:
+  level:
+    nio:
+      prepare: trace

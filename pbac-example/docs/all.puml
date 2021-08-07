@@ -1,0 +1,165 @@
+@startuml acl
+
+object "用户表" as user {
+    id = "用户ID"
+    name = "用户名"
+}
+object "用户资源关系表" as user_resource {
+    user_id = '用户id'
+    resource_id = '资源ID'
+} 
+
+
+
+object "资源表" as resource {
+    id="资源ID"
+    name="资源名称"
+    desc="资源描述"
+    code="资源码"
+}
+
+user *-> user_resource: 'id:user_id'
+user *-> user_resource: 'resource_id:id'
+@enduml
+
+@startuml rbac
+object "用户表" as user {
+    id = "用户ID"
+    name = "用户名"
+}
+object "用户角色关系表" as user_role {
+    user_id = '用户id'
+    role_id = '资源ID'
+} 
+
+object "角色表" as role {
+    id
+    name = "角色名称"
+    role_code="角色编码"
+    role_desc="角色描述"
+}
+
+object "角色资源关系表" as role_resource {
+    role_id="角色id"
+    resource_id="资源ID"
+}
+
+
+
+object "资源表" as resource {
+    id="资源ID"
+    name="资源名称"
+    desc="资源描述"
+}
+
+user *-> user_role: 'id:user_id'
+user_role<-*role: 'role_id:id'
+role *-> role_resource: 'id:role_id'
+role_resource *-> resource: 'resource_id:id'
+@enduml
+
+
+@startuml pbac
+object "用户表" as user {
+    id = "用户ID"
+    name = "用户名"
+}
+object "用户角色关系表" as user_role {
+    user_id = '用户id'
+    role_id = '资源ID'
+} 
+
+object "角色表" as role {
+    id
+    name = "角色名称"
+    role_code="角色编码"
+    role_desc="角色描述"
+}
+
+
+object "规则定义表"  as policy_define{
+    id
+    name = "规则名称"
+    handlerName = "对应规则执行器名称,与 script 二选1"
+    script = "使用脚本执行,与handlerName二选一"
+    param_decritpion = "参数格式定义,json存储,描述该规则需要几个扩展参数"
+}
+
+object "规则实例表" as policy_instance {
+    id ="主键"
+    policy_id="对应策略ID" 
+    param_config="入参配置,json 存储，描述扩展参数的具体内容值"
+}
+
+object "规则实例资源关联表" as policy_instance_resource {
+    policy_instance_id = "关联规则实例表ID"
+    resource_id = "对应资源ID"
+}
+
+object "资源表" as resource {
+    id="资源ID"
+    name="资源名称"
+    desc="资源描述"
+}
+
+user -> user_role : 'id:user_id'
+user_role <- role : 'role_id:id'
+policy_define -> policy_instance : 'id:policy_id'
+policy_instance -> policy_instance_resource: 'id:policy_instance_id'
+policy_instance_resource <- resource: 'resource_id:id'
+
+@enduml
+
+@startuml rbac流程
+
+start
+if (URI 需要鉴权) then (yes)
+    if (URI 不匹配资源?) then (yes)
+        :无权限访问;  
+        kill
+    endif
+    if (资源匹配角色列表为空?) then (yes)
+        :无权限访问;  
+        kill
+    endif
+    if (用户无任何授予的角色?) then (yes)
+        :无权限访问;  
+        kill
+    endif
+    if (用户角色列表和资源角色列表无交集?) then (yes)
+        :无权限访问;  
+        kill
+    endif
+endif
+:放行;
+stop
+
+@enduml
+
+@startuml pbac_flow
+start
+if (URI 需要鉴权) then (yes)
+    if (URI 不匹配资源?) then (yes)
+        :无权限访问;  
+        kill
+    endif
+    if (资源不关联对应执行器?) then (yes)
+        :无权限访问;  
+        kill
+    endif
+    : 获取执行器实例和配置;
+    : 执行策略,输入用户,执行器参数值;
+    if (执行结果为true?) then (yes)
+        :无权限访问;  
+        kill
+    endif
+endif
+
+
+:放行;
+stop
+
+
+
+@enduml
+

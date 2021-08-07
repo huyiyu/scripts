@@ -1,0 +1,27 @@
+ext {
+    set('springCloudVersion', "2023.0.3")
+    set('springBootVersion', "3.3.3")
+}
+
+allprojects {
+    group = 'com.huyiyu.pbac'
+    version = '0.0.1-SNAPSHOT'
+    repositories {
+        maven {
+            url 'https://maven.aliyun.com/repository/public'
+        }
+    }
+}
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'java-library'
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}
