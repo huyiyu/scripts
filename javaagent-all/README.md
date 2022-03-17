@@ -39,8 +39,11 @@ curl localhost:8080/preMain
 java -jar springBootDemo.jar
 # 6. 执行javaagentCore 的test 将agentCore 相关信息 attach 到jvm中
 java javaagent-core/target/test-classes/Main
-# 测试 agentMain 生效
-curl localhost:8080/preMain # 返回 {"testField":""}
-curl localhost:8080/agentMain # 返回 {"testField":"12345678"} 说明
-
+# 返回 {"testField":""}
+curl localhost:8080/preMain 
+# 返回 {"testField":"12345678"} 生效
+curl localhost:8080/agentMain 
 ```
+## 参考 
+1. https://blogs.oracle.com/ouchina/post/javaagent
+2. https://www.cnblogs.com/rickiyang/p/11368932.html
