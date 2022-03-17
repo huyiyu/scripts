@@ -1,5 +1,6 @@
 # 通过premain 和 agentMain 动态替换类
-> 开发人员方便测试人员测试环境不校验某些条件产生的工具,通过javaagent机制动态替换字节码
+> 开发人员方便测试人员测试环境不校验某些条件产生的工具,通过javaagent机制动态替换字节码,应用人员开发时只需将想替换的包copy到
+`javaagent-core` ***并对想替换的java类打上@Replace 注解***
 ## 项目结构说明
 ```bash
 ├── README.md  # 文档说明
