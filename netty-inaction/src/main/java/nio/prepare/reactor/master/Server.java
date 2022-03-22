@@ -1,11 +1,10 @@
-package nio.prepare.reactor.muitiple;
+package nio.prepare.reactor.master;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
-import java.util.Iterator;
 import java.util.Set;
 
 /**
@@ -14,12 +13,12 @@ import java.util.Set;
  */
 public class Server {
 
-    public static int i;
-
     private Selector selector;
     private int bugCount;
     private static final int MAX_ERROR_COUNT = 10;
 
+    public Server() {
+    }
 
     public Server(int port) {
         try {
@@ -27,7 +26,7 @@ public class Server {
             nioServer.bind(new InetSocketAddress(port));
             nioServer.configureBlocking(false);
             selector = Selector.open();
-            nioServer.register(selector, SelectionKey.OP_ACCEPT, new Accceptor(nioServer, selector));
+            nioServer.register(selector, SelectionKey.OP_ACCEPT, new Acceptor(nioServer));
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -37,20 +36,15 @@ public class Server {
         try {
             while (!Thread.interrupted()) {
                 System.out.println("---------");
-                if (safeSelect(0L) == 0) {
+                if (safeSelect(0) == 0) {
                     continue;
                 }
-                Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-                System.out.println("个数:"+selector.selectedKeys().size());
-                while (iterator.hasNext()){
-                    SelectionKey next = iterator.next();
-                    Runnable attachment = (Runnable) next.attachment();
-                    executor(attachment);
-                    System.out.println(i++);
-                    iterator.remove();
+                Set<SelectionKey> selectionKeys = selector.selectedKeys();
+                for (SelectionKey selectionKey : selectionKeys) {
+                    Acceptor attachment = (Acceptor) selectionKey.attachment();
+                    attachment.accept();
                 }
-                selector.selectedKeys().clear();
-
+                selectionKeys.clear();
             }
         } catch (Exception exception) {
             exception.printStackTrace();

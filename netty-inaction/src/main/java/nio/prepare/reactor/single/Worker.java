@@ -24,7 +24,8 @@ public class Worker implements Runnable {
                 System.out.print(new String(allocate.array(), 0, len));
                 allocate.clear();
             } while (len != 0);
-            socketChannel.write(ByteBuffer.wrap("OK".getBytes(StandardCharsets.UTF_8)));
+            String ok =  "HTTP/1.1 200 OK \nContent-Type: text/html;Charset=utf-8\n\r\nOK";
+            socketChannel.write(ByteBuffer.wrap(ok.getBytes(StandardCharsets.UTF_8)));
             socketChannel.close();
         } catch (Exception e) {
             e.printStackTrace();
