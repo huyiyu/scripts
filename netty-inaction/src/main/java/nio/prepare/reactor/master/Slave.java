@@ -28,7 +28,7 @@ public class Slave extends Thread{
             if (size > 0){
                 System.out.println(Thread.currentThread().getName()+" selectorCounts:"+size);
             }
-            if (safeSelect(0) == 0) {
+            if (safeSelect(5) == 0) {
                 continue;
             }
             while (!Thread.interrupted() && !restart) {
