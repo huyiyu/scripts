@@ -26,6 +26,8 @@ public class Worker implements Runnable {
 
     @Override
     public void run() {
+        // 单selector 多线程模型中不允许把读请求放到多线程中,因为select 监听了read 事件 当channel就绪了
+        // 便会重新触发读事件导致多线程共同处理一个 channel
         int len;
         try {
             ByteBuffer allocate = ByteBuffer.allocate(15);

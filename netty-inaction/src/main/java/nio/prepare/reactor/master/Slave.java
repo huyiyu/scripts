@@ -6,7 +6,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.util.Set;
 
-public class Slave extends Thread{
+public class Slave extends Thread {
 
     private volatile Selector selector;
     private int bugCount;
@@ -25,8 +25,8 @@ public class Slave extends Thread{
     public void run() {
         while (!Thread.interrupted()) {
             int size = this.selector.keys().size();
-            if (size > 0){
-                System.out.println(Thread.currentThread().getName()+" selectorCounts:"+size);
+            if (size > 0) {
+                System.out.println(Thread.currentThread().getName() + " selectorCounts:" + size);
             }
             if (safeSelect(5) == 0) {
                 continue;
