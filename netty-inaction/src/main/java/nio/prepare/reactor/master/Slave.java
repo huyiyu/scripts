@@ -28,10 +28,10 @@ public class Slave extends Thread {
             if (size > 0) {
                 System.out.println(Thread.currentThread().getName() + " selectorCounts:" + size);
             }
-            if (safeSelect(5) == 0) {
-                continue;
-            }
             while (!Thread.interrupted() && !restart) {
+                if (safeSelect(0) == 0) {
+                    continue;
+                }
                 Set<SelectionKey> selectionKeys = selector.selectedKeys();
                 for (SelectionKey selectionKey : selectionKeys) {
                     Worker attachment = (Worker) selectionKey.attachment();

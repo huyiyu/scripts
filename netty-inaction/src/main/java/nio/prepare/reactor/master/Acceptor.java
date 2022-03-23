@@ -35,11 +35,12 @@ public class Acceptor {
         try {
             SocketChannel accept = serverSocketChannel.accept();
             accept.configureBlocking(false);
-            selectors[nextId].wakeup();
+
             slaves[nextId].setRestart(true);
-            accept.register(selectors[nextId], SelectionKey.OP_READ, new Worker(accept));
-            slaves[nextId].setRestart(false);
             selectors[nextId].wakeup();
+            accept.register(selectors[nextId], SelectionKey.OP_READ, new Worker(accept));
+            selectors[nextId].wakeup();
+            slaves[nextId].setRestart(false);
             nextId = (nextId + 1) % CORE;
         } catch (Exception exception) {
             throw new RuntimeException(exception);
