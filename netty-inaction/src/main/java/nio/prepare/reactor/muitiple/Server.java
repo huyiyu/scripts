@@ -41,7 +41,6 @@ public class Server {
                     continue;
                 }
                 Iterator<SelectionKey> iterator = selector.selectedKeys().iterator();
-                System.out.println("个数:"+selector.selectedKeys().size());
                 while (iterator.hasNext()){
                     SelectionKey next = iterator.next();
                     Runnable attachment = (Runnable) next.attachment();

@@ -26,34 +26,31 @@ public class Worker implements Runnable {
 
     @Override
     public void run() {
-        String id = Thread.currentThread().getName();
-        System.out.println("thread:" + id + " socket:" + socketChannel.hashCode());
-        System.out.println("thread:" + id + " worker:" + this.hashCode());
-        Thread thread = new Thread(this::process);
+        int len;
         try {
-            thread.join();
-        } catch (InterruptedException e) {
-            e.printStackTrace();
+            ByteBuffer allocate = ByteBuffer.allocate(15);
+            do {
+                len = socketChannel.read(allocate);
+                System.out.print(new String(allocate.array(), 0, len));
+                allocate.clear();
+            } while (len != 0);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
-        thread.start();
+        threadPoolExecutor.execute(this::process);
+
+
     }
 
-    private synchronized void process() {
+    private void process() {
         ByteBuffer allocate = ByteBuffer.allocate(15);
         int len;
-        if (socketChannel.isOpen()) {
-            try {
-                do {
-                    len = socketChannel.read(allocate);
-                    System.out.print(new String(allocate.array(), 0, len));
-                    allocate.clear();
-                } while (len != 0);
-                String ok =  "HTTP/1.1 200 OK \nContent-Type: text/html;Charset=utf-8\n\r\nOK";
-                socketChannel.write(ByteBuffer.wrap(ok.getBytes(StandardCharsets.UTF_8)));
-                socketChannel.close();
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+        try {
+            String ok = "HTTP/1.1 200 OK \nContent-Type: text/html;Charset=utf-8\n\r\nOK";
+            socketChannel.write(ByteBuffer.wrap(ok.getBytes(StandardCharsets.UTF_8)));
+            socketChannel.close();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
     }
