@@ -12,11 +12,9 @@ public class Worker {
 
 
     private SocketChannel socketChannel;
-    private Selector selector;
 
-    public Worker(SocketChannel accept, Selector selector) {
+    public Worker(SocketChannel accept) {
         this.socketChannel = accept;
-        this.selector = selector;
     }
 
     public void process() {

@@ -37,7 +37,7 @@ public class Acceptor {
             accept.configureBlocking(false);
             selectors[nextId].wakeup();
             slaves[nextId].setRestart(true);
-            accept.register(selectors[nextId], SelectionKey.OP_READ, new Worker(accept, selectors[nextId]));
+            accept.register(selectors[nextId], SelectionKey.OP_READ, new Worker(accept));
             slaves[nextId].setRestart(false);
             selectors[nextId].wakeup();
             nextId = (nextId + 1) % CORE;
