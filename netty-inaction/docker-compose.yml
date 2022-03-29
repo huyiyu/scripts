@@ -1,0 +1,56 @@
+version: '3'
+services:
+  server1:
+    image: huyiyu/netty-server
+    environment:
+      - TZ=Asia/Shanghai
+      - netty.port=9000
+      - spring.application.name=server1
+      - spring.kafka.admin.client-id=server1
+      - spring.kafka.consumer.bootstrap-servers=kafka:9092
+      - spring.kafka.admin.fail-fast=true
+      - spring.kafka.consumer.group-id=server1
+      - logging.level.nio.prepare=trace
+    depends_on:
+      - kafka
+  server2:
+    image: huyiyu/netty-server
+    environment:
+      - TZ=Asia/Shanghai
+      - netty.port=9000
+      - spring.application.name=server2
+      - spring.kafka.admin.client-id=server2
+      - spring.kafka.consumer.bootstrap-servers=kafka:9092
+      - spring.kafka.admin.fail-fast=true
+      - spring.kafka.consumer.group-id=server2
+      - logging.level.nio.prepare=trace
+    depends_on:
+      - kafka
+  zookeeper:
+    image: 'bitnami/zookeeper:latest'
+    ports:
+      - '2181:2181'
+    environment:
+      - TZ=Asia/Shanghai
+      - ALLOW_ANONYMOUS_LOGIN=yes
+  kafka:
+    image: 'bitnami/kafka:latest'
+    ports:
+      - '9092:9092'
+    environment:
+      - TZ=Asia/Shanghai
+      - KAFKA_BROKER_ID=1
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+    depends_on:
+      - zookeeper
+  nginx:
+    image: nginx:1.21.6-alpine
+    volumes:
+      - ./data/nginx/conf.d:/etc/nginx/conf.d
+    ports:
+      - "80:80"
+    environment:
+      - NGINX_PORT=80

@@ -3,10 +3,9 @@ package nio.prepare.reactor.master;
 import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
 import java.util.Set;
 
-public class Slave extends Thread {
+public class Slave extends Thread{
 
     private volatile Selector selector;
     private int bugCount;
@@ -24,10 +23,14 @@ public class Slave extends Thread {
     @Override
     public void run() {
         while (!Thread.interrupted()) {
+            int size = this.selector.keys().size();
+            if (size > 0){
+                System.out.println(Thread.currentThread().getName()+" selectorCounts:"+size);
+            }
+            if (safeSelect(5) == 0) {
+                continue;
+            }
             while (!Thread.interrupted() && !restart) {
-                if (safeSelect(0) == 0) {
-                    continue;
-                }
                 Set<SelectionKey> selectionKeys = selector.selectedKeys();
                 for (SelectionKey selectionKey : selectionKeys) {
                     Worker attachment = (Worker) selectionKey.attachment();
