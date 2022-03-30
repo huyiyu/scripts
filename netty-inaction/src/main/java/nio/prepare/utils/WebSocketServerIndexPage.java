@@ -44,6 +44,13 @@ public final class WebSocketServerIndexPage {
                         "  socket.onopen = function(event) {" + NEWLINE +
                         "    var ta = document.getElementById('responseText');" + NEWLINE +
                         "    ta.value = \"Web Socket opened!\";" + NEWLINE +
+                        "    setInterval(()=>{" + NEWLINE +
+                        "        if (socket.readyState == WebSocket.OPEN) {" + NEWLINE +
+                        "           socket.send('{\"type\":\"KEEPALIVE\",\"userId\":1}');" + NEWLINE +
+                        "        } else { " + NEWLINE +
+                        "           socket = new WebSocket(\"ws://121.5.50.204/ws\");" + NEWLINE +
+                        "       }" + NEWLINE +
+                        "     },30000);" + NEWLINE +
                         "  };" + NEWLINE +
                         "  socket.onclose = function(event) {" + NEWLINE +
                         "    var ta = document.getElementById('responseText');" + NEWLINE +
