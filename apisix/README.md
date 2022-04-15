@@ -50,17 +50,30 @@ etcdctl --endpoints=etcd-1:2379,etcd-2:2379,etcd-3:2379  --user=user:password ge
 
 #### 2.1.2 ETCD 备份恢复
 
-* 缓存快照
+##### 缓存快照
 
 ```bash 
-etcdctl --user=user:password --enndpoint=etcd-1:2379,etcd-2:2379,etcd-3:2379 snapshot save path/to/my.db
+etcdctl --user=user:password --enndpoint=etcd-1:2379,etcd-2:2379,etcd-3:2379 snapshot save /backup/my.db
 ```
-* 根据快照恢复
+##### 根据快照恢复
 
->当通过主动save 获得的快照时,db文件支持数据校验,若通过 etcd 数据目录获得的db 文件需要添加参数`--skip-hash-check`跳过校验；另外,要避免db文件修改了集群其他信息
+1. 当通过主动save 获得的快照时,db文件支持数据校验,若通过 etcd 数据目录获得的db 文件需要添加参数`--skip-hash-check`跳过校验；另外,要避免db文件修改了集群其他信息
 
 ```bash
-etcdctl --user=user:password --skip-hash-check --enndpoint=etcd-1:2379,etcd-2:2379,etcd-3:2379 snapshot restore path/to/my.db
+# 进入 三台机器,使用还原文件 my.db 生成还原目录
+etcdctl --endpoints=ip:2379 snapshot restore /backup/my.db  \
+        --initial-cluster=${ETCD_INITIAL_CLUSTER} \
+        --name=${ETCD_NAME}  \
+        --initial-cluster-token=${ETCD_INITIAL_CLUSTER_TOKEN}  \
+        --initial-advertise-peer-urls=${ETCD_INITIAL_ADVERTISE_PEER_URLS}  \
+        --data-dir=/backup/${ETCD_NAME}
+# 停止机器
+docker-compose stop etcd 
+# 外部手动更换手动将backup 生成的还原目录替换到 data 目录
+mv data old
+mv backup data
+# 重新启动 etcd
+docker-compose up -d etcd
 ```
 #### 2.1.3 ETCD 集群测试,基准测试
 1. 编译 benchmark
@@ -80,13 +93,13 @@ chmod +x /usr/local/bin/benchmark
 > 参考官方[基准测试文档](https://etcd.io/docs/v3.5/op-guide/performance/)
 ```bash
 # write to leader
-benchmark --endpoints=${HOST_1} --target-leader --conns=1 --clients=1 \
+benchmark --endpoints=${LEADER} --target-leader --conns=1 --clients=1 \
     put --key-size=8 --sequential-keys --total=10000 --val-size=256
-benchmark --endpoints=${HOST_1} --target-leader  --conns=100 --clients=1000 \
+benchmark --endpoints=${LEADER} --target-leader  --conns=100 --clients=1000 \
     put --key-size=8 --sequential-keys --total=100000 --val-size=256
 
 # write to all members
-benchmark --endpoints=${HOST_1},${HOST_2},${HOST_3} --conns=100 --clients=1000 \
+benchmark --endpoints=${LEADER},${FOLLOWER},${FOLLOWER} --conns=100 --clients=1000 \
     put --key-size=8 --sequential-keys --total=100000 --val-size=256
 ```
 
