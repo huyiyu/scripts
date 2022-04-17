@@ -29,13 +29,3 @@ services:
     restart: unless-stopped
     ports:
       - "80:3000"
-  bind9:
-    image: internetsystemsconsortium/bind9:9.18
-    network_mode: "host"
-    environment:
-      TZ: Asia/Shanghai
-    restart: unless-stopped
-    volumes:
-    - ./config/bind9/named.conf.options:/etc/bind/named.conf.options
-    - ./config/bind9/named.conf.default-zones:/etc/bind/named.conf.default-zones
-    - ./config/bind9/db.itjinfuyun.com:/etc/bind/db.itjinfuyun.com
