@@ -1,0 +1,38 @@
+version: "3"
+services:
+  db:
+    image: mariadb
+    restart: always
+    environment:
+      - MARIADB_ROOT_PASSWORD=root
+      - MARIADB_DATABASE=data_import
+      - MARIADB_USER=data
+      - MARIADB_PASSWORD=data
+    ports:
+      - 3306:3306
+    volumes:
+      - ./data/mysql:/var/lib/mysql
+  redis:
+    image: redis:7.0-bullseye
+    volumes:
+      - ./conf/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - 6379:6379
+    command:
+      - redis-server
+      - /usr/local/etc/redis/redis.conf
+  minio:
+    image: quay.io/minio/minio
+    volumes:
+      - ./data/minio:/data
+    environment:
+      - MINIO_ROOT_USER=minio
+      - MINIO_ROOT_PASSWORD=minio1234
+    ports:
+    - 9000:9000
+    - 9001:9001
+    command:
+      - server
+      - /data
+      - --console-address
+      - ":9001"
