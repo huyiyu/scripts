@@ -1,0 +1,57 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.3.1'
+    id 'io.spring.dependency-management' version '1.1.5'
+}
+
+group = 'com.cibidf.pbac'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    maven {
+        url 'https://maven.aliyun.com/repository/public'
+    }
+}
+
+dependencies {
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
+    testImplementation 'org.freemarker:freemarker'
+    testImplementation 'com.baomidou:mybatis-plus-generator:3.5.7'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    implementation 'org.apache.skywalking:apm-toolkit-trace:9.3.0'
+    implementation 'org.springframework.boot:spring-boot-starter-security'
+    implementation 'org.springframework.boot:spring-boot-starter-oauth2-resource-server'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'com.mysql:mysql-connector-j'
+    implementation 'com.baomidou:mybatis-plus-spring-boot3-starter:3.5.7'
+    implementation 'com.nimbusds:nimbus-jose-jwt:9.40'
+    implementation 'com.google.crypto.tink:tink:1.13.0'
+    implementation 'commons-io:commons-io:2.16.1'
+    implementation 'cn.hutool:hutool-all:5.8.29'
+    implementation 'org.bouncycastle:bcprov-jdk18on:1.78.1'
+    /*implementation 'org.apache.groovy:groovy'*/
+
+
+
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
+
