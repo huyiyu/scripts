@@ -25,9 +25,3 @@ services:
     ports:
       - 8848:8848
       - 9848:9848
-  nginx:
-    image: nginx:1.25.1-alpine
-    restart: always
-    network_mode: host
-    volumes:
-      - ./biz.conf:/etc/nginx/conf.d/biz.conf

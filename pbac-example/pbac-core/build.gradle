@@ -12,6 +12,7 @@ dependencyManagement {
 dependencies {
     compileOnly 'org.slf4j:slf4j-api'
     compileOnly 'org.projectlombok:lombok'
+    compileOnly 'io.projectreactor:reactor-core'
 
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

@@ -4,6 +4,7 @@ import com.huyiyu.pbac.gateway.domain.R;
 import com.huyiyu.pbac.core.jwt.JwtService;
 import com.huyiyu.pbac.core.property.PbacProperties;
 import com.huyiyu.pbac.core.utils.JsonUtil;
+import com.huyiyu.pbac.gateway.service.impl.SecurityExector;
 import java.util.Optional;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,7 +31,7 @@ public class SecurityConfig {
 
   @Bean
   public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
-      PbacProperties pbacProperties, JwtService jwtService) {
+      PbacProperties pbacProperties, JwtService jwtService,SecurityExector securityExector) {
 
     return http.oauth2ResourceServer(oAuth2ResourceServerSpec ->
             oAuth2ResourceServerSpec
@@ -45,7 +46,7 @@ public class SecurityConfig {
             authorizeExchangeSpec
                 .pathMatchers(pbacProperties.getPermitAllPattern()).permitAll()
                 .anyExchange()
-                .authenticated()
+                .access(securityExector)
         ).exceptionHandling(exceptionHandlingSpec ->
             exceptionHandlingSpec.accessDeniedHandler(this::accessDenied)
                 .authenticationEntryPoint(this::onLoginFailure)

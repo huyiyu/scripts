@@ -7,8 +7,6 @@ import com.huyiyu.pbac.engine.service.IResourcePolicyInstanceService;
 import com.huyiyu.pbac.engine.service.IResourceService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.huyiyu.pbac.core.enums.MatchType;
-import com.huyiyu.pbac.core.policy.PolicyHandler;
-import com.huyiyu.pbac.core.policy.PolicyMatcher;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Optional;
 import lombok.RequiredArgsConstructor;

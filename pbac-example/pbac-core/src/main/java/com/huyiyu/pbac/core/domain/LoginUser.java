@@ -3,12 +3,12 @@ package com.huyiyu.pbac.core.domain;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.function.Supplier;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 public class LoginUser implements UserDetails {
-
-  private static final List<GrantedAuthority> authorities = new ArrayList<>();
 
   public static final String USERNAME_KEY = "username";
   public static final String PASSWORD_KEY = "password";
@@ -18,10 +18,12 @@ public class LoginUser implements UserDetails {
   private String password;
   private String username;
 
+  private List<SimpleGrantedAuthority> authoritySuppliers;
+
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return authorities;
+    return authoritySuppliers;
   }
 
   @Override

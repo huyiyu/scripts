@@ -1,4 +1,4 @@
-package com.huyiyu.pbac.core.rule;
+package com.huyiyu.pbac.core.domain;
 
 import com.huyiyu.pbac.core.enums.ConditionType;
 import lombok.Data;

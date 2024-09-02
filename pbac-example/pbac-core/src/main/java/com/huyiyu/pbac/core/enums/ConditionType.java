@@ -1,5 +1,9 @@
 package com.huyiyu.pbac.core.enums;
 
+import java.util.Arrays;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
@@ -12,4 +16,13 @@ public enum ConditionType {
   private int value;
   private String desc;
 
+
+  private static final Map<Integer, ConditionType> META_INFO = Arrays
+      .stream(values())
+      .collect(Collectors.toMap(ConditionType::getValue, Function.identity()));
+
+
+  public ConditionType of(int value) {
+    return META_INFO.get(value);
+  }
 }
