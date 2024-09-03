@@ -22,7 +22,7 @@ public enum ConditionType {
       .collect(Collectors.toMap(ConditionType::getValue, Function.identity()));
 
 
-  public ConditionType of(int value) {
+  public static ConditionType of(int value) {
     return META_INFO.get(value);
   }
 }

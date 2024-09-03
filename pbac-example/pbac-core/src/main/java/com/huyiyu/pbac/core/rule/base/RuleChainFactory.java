@@ -1,7 +1,8 @@
 package com.huyiyu.pbac.core.rule.base;
 
-import com.huyiyu.pbac.core.domain.LoginUser;
-import com.huyiyu.pbac.core.domain.PolicyRuleParam;
+import com.huyiyu.pbac.core.domain.PbacUser;
+import com.huyiyu.pbac.core.domain.PbacPolicyRule;
+import com.huyiyu.pbac.core.domain.PbacContext;
 import com.huyiyu.pbac.core.rule.reactive.ReactiveExecutorPoint;
 import com.huyiyu.pbac.core.rule.simply.ExecutorPoint;
 import java.util.List;
@@ -14,24 +15,24 @@ public class RuleChainFactory {
 
   private final Map<String, AbstractRuleElement<?>> ruleElementMap;
 
-  private RuleChain createRuleChain(List<PolicyRuleParam> patternTransfer) {
+  private RuleChain createRuleChain(List<PbacPolicyRule> patternTransfer) {
     return new SimpleRuleChain(patternTransfer, ruleElementMap);
   }
 
 
 
-  private <T> boolean executor(RuleContext ruleContext) {
+  private <T> boolean executor(PbacContext ruleContext) {
     RuleChain ruleChain = createRuleChain(ruleContext.getPolicyRuleParamList());
     ruleChain.next(ruleContext);
     return ruleChain.finalDesidission();
   }
 
-  public <T> boolean decide(ExecutorPoint<T> executorPoint, T t, LoginUser loginUser) {
-    RuleContext ruleContext = executorPoint.getPolicyRuleParam(t, loginUser);
+  public <T> boolean decide(ExecutorPoint<T> executorPoint, T t, PbacUser loginUser) {
+    PbacContext ruleContext = executorPoint.getPolicyRuleParam(t, loginUser);
     return executor(ruleContext);
   }
 
-  public <T> Mono<Boolean> decide(ReactiveExecutorPoint<T> executorPoint,T t, LoginUser loginUser) {
+  public <T> Mono<Boolean> decide(ReactiveExecutorPoint<T> executorPoint,T t, PbacUser loginUser) {
     return executorPoint.getPolicyRuleParam(t,loginUser)
         .map(this::executor);
   }

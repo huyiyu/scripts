@@ -1,7 +1,7 @@
 package com.huyiyu.pbac.engine.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
-import com.huyiyu.pbac.engine.entity.PolicyInstance;
+import com.huyiyu.pbac.engine.entity.Policy;
 
 /**
  * <p>
@@ -9,8 +9,8 @@ import com.huyiyu.pbac.engine.entity.PolicyInstance;
  * </p>
  *
  * @author huyiyu
- * @since 2024-08-05
+ * @since 2024-09-03
  */
-public interface PolicyInstanceMapper extends BaseMapper<PolicyInstance> {
+public interface PolicyMapper extends BaseMapper<Policy> {
 
 }

@@ -9,7 +9,7 @@ import com.huyiyu.pbac.engine.entity.Resource;
  * </p>
  *
  * @author huyiyu
- * @since 2024-08-05
+ * @since 2024-09-03
  */
 public interface ResourceMapper extends BaseMapper<Resource> {
 

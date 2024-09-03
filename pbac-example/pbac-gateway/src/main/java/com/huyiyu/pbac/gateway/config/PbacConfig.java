@@ -20,7 +20,7 @@ public class PbacConfig {
   }
 
   @Bean
-  public URIReactiveExecutorPoint uriReactiveExecutorPoint(ReactiveRedisTemplate<String, Object> reactiveRedisTemplate, WebClient webClient) {
+  public URIReactiveExecutorPoint uriReactiveExecutorPoint(ReactiveRedisTemplate<Object, Object> reactiveRedisTemplate, WebClient webClient) {
     return new URIReactiveExecutorPoint(webClient, reactiveRedisTemplate);
   }
 

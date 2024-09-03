@@ -3,10 +3,10 @@ package com.huyiyu.pbac.core.domain;
 import lombok.Data;
 
 @Data
-public class Resource {
+public class PbacResource {
 
   private Long id;
-  private Long policyId;
   private String name;
+  private Long policyId;
 
 }

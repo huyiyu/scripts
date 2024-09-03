@@ -4,7 +4,7 @@ import com.huyiyu.pbac.core.enums.ConditionType;
 import lombok.Data;
 
 @Data
-public class PolicyRuleParam {
+public class PbacPolicyRule {
 
   private String handlerName;
   private String script;

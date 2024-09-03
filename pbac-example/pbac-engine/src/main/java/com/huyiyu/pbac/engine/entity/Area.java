@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -17,7 +18,7 @@ import lombok.experimental.Accessors;
  * </p>
  *
  * @author huyiyu
- * @since 2024-08-02
+ * @since 2024-09-03
  */
 @Getter
 @Setter
@@ -61,5 +62,6 @@ public class Area implements Serializable {
      * 删除时间
      */
     @TableField("deleted_time")
+    @TableLogic
     private LocalDateTime deletedTime;
 }

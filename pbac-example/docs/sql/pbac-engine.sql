@@ -90,9 +90,9 @@ CREATE TABLE `policy_rule`
 
 create table `policy`
 (
-    `id`           bigint      NOT NULL AUTO_INCREMENT COMMENT '主键',
+    `id`           bigint      NOT NULL AUTO_INCREMENT primary key COMMENT '主键',
     `name`         varchar(20) not null comment '策略名称',
-    `detail`       text        NOT NULL DEFAULT '' COMMENT '策略说明',
+    `detail`       varchar(256)        NOT NULL DEFAULT '' COMMENT '策略说明',
     `create_time`  datetime    NOT NULL COMMENT '创建时间',
     `update_time`  datetime    NOT NULL COMMENT '更新时间',
     `deleted_time` datetime    NOT NULL DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间'

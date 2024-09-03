@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -17,7 +18,7 @@ import lombok.experimental.Accessors;
  * </p>
  *
  * @author huyiyu
- * @since 2024-08-05
+ * @since 2024-09-03
  */
 @Getter
 @Setter
@@ -34,6 +35,12 @@ public class Resource implements Serializable {
     private Long id;
 
     /**
+     * 策略ID
+     */
+    @TableField("policy_id")
+    private Long policyId;
+
+    /**
      * 资源名称
      */
     @TableField("name")
@@ -46,7 +53,7 @@ public class Resource implements Serializable {
     private String pattern;
 
     /**
-     * 1 uri 精确匹配,2 uri 模糊匹配,3 table 匹配,4.
+     * 1 uri 精确匹配,2 uri 模糊匹配,3 table 匹配
      */
     @TableField("match_type")
     private Byte matchType;
@@ -67,5 +74,6 @@ public class Resource implements Serializable {
      * 删除时间
      */
     @TableField("deleted_time")
+    @TableLogic
     private LocalDateTime deletedTime;
 }

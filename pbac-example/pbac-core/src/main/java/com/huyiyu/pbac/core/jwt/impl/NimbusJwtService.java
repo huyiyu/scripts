@@ -1,6 +1,6 @@
 package com.huyiyu.pbac.core.jwt.impl;
 
-import com.huyiyu.pbac.core.domain.LoginUser;
+import com.huyiyu.pbac.core.domain.PbacUser;
 import com.huyiyu.pbac.core.jwt.JwtService;
 import com.huyiyu.pbac.core.property.PbacProperties;
 import com.huyiyu.pbac.core.utils.DateUtil;
@@ -52,12 +52,12 @@ public class NimbusJwtService implements JwtService {
     }
   }
 
-  public String encode(LoginUser user) {
+  public String encode(PbacUser user) {
     user.setPassword("");
     JWTClaimsSet claimsSet = new Builder()
         .subject(user.getUsername())
-        .claim(LoginUser.ACCOUNT_ID_KEY, user.getAccountId())
-        .claim(LoginUser.USERNAME_KEY, user.getUsername())
+        .claim(PbacUser.ACCOUNT_ID_KEY, user.getAccountId())
+        .claim(PbacUser.USERNAME_KEY, user.getUsername())
         .expirationTime(DateUtil.onFutureByDuration(jwt.getExpiration()))
         .issuer(jwt.getIssuer())
         .audience(jwt.getAdience())
@@ -102,10 +102,10 @@ public class NimbusJwtService implements JwtService {
     }
   }
 
-  private LoginUser jwt2LoginUser(Jwt token) {
-    LoginUser loginUser = new LoginUser();
-    loginUser.setUsername(token.getClaimAsString(LoginUser.USERNAME_KEY));
-    loginUser.setAccountId(token.getClaimAsString(LoginUser.ACCOUNT_ID_KEY));
+  private PbacUser jwt2LoginUser(Jwt token) {
+    PbacUser loginUser = new PbacUser();
+    loginUser.setUsername(token.getClaimAsString(PbacUser.USERNAME_KEY));
+    loginUser.setAccountId(token.getClaimAsString(PbacUser.ACCOUNT_ID_KEY));
     return loginUser;
   }
 }

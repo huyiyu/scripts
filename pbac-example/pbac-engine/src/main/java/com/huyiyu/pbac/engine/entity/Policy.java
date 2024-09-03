@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -13,17 +14,17 @@ import lombok.experimental.Accessors;
 
 /**
  * <p>
- * 房管局审核员
+ * 策略表,规定了configuration的内容
  * </p>
  *
  * @author huyiyu
- * @since 2024-08-02
+ * @since 2024-09-03
  */
 @Getter
 @Setter
 @Accessors(chain = true)
-@TableName("role")
-public class Role implements Serializable {
+@TableName("policy")
+public class Policy implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -34,16 +35,16 @@ public class Role implements Serializable {
     private Long id;
 
     /**
-     * 角色名称
+     * 策略名称
      */
     @TableField("name")
     private String name;
 
     /**
-     * 角色编码
+     * 策略说明
      */
-    @TableField("code")
-    private String code;
+    @TableField("detail")
+    private String detail;
 
     /**
      * 创建时间
@@ -61,5 +62,6 @@ public class Role implements Serializable {
      * 删除时间
      */
     @TableField("deleted_time")
+    @TableLogic
     private LocalDateTime deletedTime;
 }

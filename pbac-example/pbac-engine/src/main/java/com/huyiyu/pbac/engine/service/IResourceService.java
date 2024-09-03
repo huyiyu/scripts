@@ -1,9 +1,8 @@
 package com.huyiyu.pbac.engine.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
+import com.huyiyu.pbac.core.domain.PbacRuleResult;
 import com.huyiyu.pbac.engine.entity.Resource;
-import jakarta.servlet.http.HttpServletRequest;
-import java.util.Optional;
 
 /**
  * <p>
@@ -11,9 +10,9 @@ import java.util.Optional;
  * </p>
  *
  * @author huyiyu
- * @since 2024-08-03
+ * @since 2024-09-03
  */
 public interface IResourceService extends IService<Resource> {
 
-  Optional<Long> getResourceIdByPattern(HttpServletRequest request);
+  PbacRuleResult getRuleResultByPattern(String pattern);
 }

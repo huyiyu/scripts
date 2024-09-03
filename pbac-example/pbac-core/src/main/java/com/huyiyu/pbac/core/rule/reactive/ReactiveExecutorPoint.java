@@ -1,11 +1,11 @@
 package com.huyiyu.pbac.core.rule.reactive;
 
-import com.huyiyu.pbac.core.domain.LoginUser;
-import com.huyiyu.pbac.core.rule.base.RuleContext;
+import com.huyiyu.pbac.core.domain.PbacUser;
+import com.huyiyu.pbac.core.domain.PbacContext;
 import reactor.core.publisher.Mono;
 
 public interface ReactiveExecutorPoint<P> {
 
-  Mono<RuleContext> getPolicyRuleParam(P pattern, LoginUser user);
+  Mono<PbacContext> getPolicyRuleParam(P pattern, PbacUser user);
 
 }

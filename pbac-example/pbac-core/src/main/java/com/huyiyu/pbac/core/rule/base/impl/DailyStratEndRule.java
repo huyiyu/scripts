@@ -1,8 +1,7 @@
 package com.huyiyu.pbac.core.rule.base.impl;
 
-import com.huyiyu.pbac.core.domain.LoginUser;
 import com.huyiyu.pbac.core.rule.base.AbstractRuleElement;
-import com.huyiyu.pbac.core.rule.base.RuleContext;
+import com.huyiyu.pbac.core.domain.PbacContext;
 import com.huyiyu.pbac.core.rule.base.impl.DailyStratEndRule.DailyParam;
 import java.time.LocalTime;
 import java.util.Objects;
@@ -12,7 +11,7 @@ public class DailyStratEndRule extends AbstractRuleElement<DailyParam> {
 
 
   @Override
-  public boolean decide(RuleContext ruleContext, DailyParam configuration) {
+  public boolean decide(PbacContext ruleContext, DailyParam configuration) {
 
     LocalTime now = LocalTime.now();
     return  Objects.nonNull(configuration)

@@ -1,12 +1,9 @@
 package com.huyiyu.pbac.core.rule.simply;
 
-import com.huyiyu.pbac.core.domain.LoginUser;
-import com.huyiyu.pbac.core.domain.PolicyRuleParam;
-import com.huyiyu.pbac.core.rule.base.RuleContext;
-import java.util.List;
-import reactor.core.publisher.Mono;
+import com.huyiyu.pbac.core.domain.PbacUser;
+import com.huyiyu.pbac.core.domain.PbacContext;
 
 public interface ExecutorPoint<P>{
 
-  RuleContext getPolicyRuleParam(P pattern, LoginUser user);
+  PbacContext getPolicyRuleParam(P pattern, PbacUser user);
 }

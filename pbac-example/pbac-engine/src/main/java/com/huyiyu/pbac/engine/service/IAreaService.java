@@ -9,7 +9,7 @@ import com.huyiyu.pbac.engine.entity.Area;
  * </p>
  *
  * @author huyiyu
- * @since 2024-08-02
+ * @since 2024-09-03
  */
 public interface IAreaService extends IService<Area> {
 

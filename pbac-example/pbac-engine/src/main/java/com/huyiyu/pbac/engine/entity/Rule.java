@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -17,13 +18,13 @@ import lombok.experimental.Accessors;
  * </p>
  *
  * @author huyiyu
- * @since 2024-08-05
+ * @since 2024-09-03
  */
 @Getter
 @Setter
 @Accessors(chain = true)
-@TableName("policy_define")
-public class PolicyDefine implements Serializable {
+@TableName("rule")
+public class Rule implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -34,10 +35,22 @@ public class PolicyDefine implements Serializable {
     private Long id;
 
     /**
+     * 规则定义名称
+     */
+    @TableField("name")
+    private String name;
+
+    /**
+     * 维度
+     */
+    @TableField("level")
+    private Byte level;
+
+    /**
      * 规则说明
      */
-    @TableField("policy_detail")
-    private String policyDetail;
+    @TableField("detail")
+    private String detail;
 
     /**
      * 指定执行器，与script二选一,handlerName优先
@@ -52,7 +65,13 @@ public class PolicyDefine implements Serializable {
     private String scripts;
 
     /**
-     * 参数描述,json格式案例[{"name":"名称","value":"值","desc":"描述"}]
+     * 是否动态
+     */
+    @TableField("dynamic")
+    private Boolean dynamic;
+
+    /**
+     * 参数描述,提供前端渲染即用户填写,json格式案例[{"name":"名称","value":"值","desc":"描述"}]
      */
     @TableField("param_desc")
     private String paramDesc;
@@ -73,5 +92,6 @@ public class PolicyDefine implements Serializable {
      * 删除时间
      */
     @TableField("deleted_time")
+    @TableLogic
     private LocalDateTime deletedTime;
 }

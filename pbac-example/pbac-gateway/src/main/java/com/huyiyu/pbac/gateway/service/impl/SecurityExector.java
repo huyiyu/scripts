@@ -1,6 +1,6 @@
 package com.huyiyu.pbac.gateway.service.impl;
 
-import com.huyiyu.pbac.core.domain.LoginUser;
+import com.huyiyu.pbac.core.domain.PbacUser;
 import com.huyiyu.pbac.core.rule.base.RuleChainFactory;
 import com.huyiyu.pbac.gateway.pbac.URIReactiveExecutorPoint;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +23,7 @@ public class SecurityExector implements ReactiveAuthorizationManager<Authorizati
     ServerWebExchange exchange = authorizationContext.getExchange();
     return authentication.filter(Authentication::isAuthenticated)
         .map(Authentication::getPrincipal)
-        .cast(LoginUser.class)
+        .cast(PbacUser.class)
         .flatMap(loginUser -> ruleChainFactory.decide(uriReactiveExecutorPoint, authorizationContext, loginUser))
         .map(AuthorizationDecision::new);
   }

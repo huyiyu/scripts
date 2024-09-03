@@ -1,7 +1,7 @@
 package com.huyiyu.pbac.engine.mapper;
 
-import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.huyiyu.pbac.engine.entity.Area;
+import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * <p>
@@ -9,7 +9,7 @@ import com.huyiyu.pbac.engine.entity.Area;
  * </p>
  *
  * @author huyiyu
- * @since 2024-08-05
+ * @since 2024-09-03
  */
 public interface AreaMapper extends BaseMapper<Area> {
 

@@ -25,3 +25,8 @@ services:
     ports:
       - 8848:8848
       - 9848:9848
+  redis:
+    image: redis:6.2.14
+    restart: always
+    ports:
+      - 6379:6379

@@ -1,16 +1,16 @@
 package com.huyiyu.pbac.engine.mapper;
 
-import com.huyiyu.pbac.engine.entity.Account;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.huyiyu.pbac.engine.entity.PolicyRule;
 
 /**
  * <p>
- * 成交单 Mapper 接口
+ * 规则组合表 Mapper 接口
  * </p>
  *
  * @author huyiyu
  * @since 2024-09-03
  */
-public interface AccountMapper extends BaseMapper<Account> {
+public interface PolicyRuleMapper extends BaseMapper<PolicyRule> {
 
 }

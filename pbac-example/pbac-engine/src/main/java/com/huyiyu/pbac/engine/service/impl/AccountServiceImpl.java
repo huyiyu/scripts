@@ -2,11 +2,11 @@ package com.huyiyu.pbac.engine.service.impl;
 
 import cn.hutool.crypto.SmUtil;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.huyiyu.pbac.engine.convert.AccountConvert;
+import com.huyiyu.pbac.engine.convert.PbacConvertor;
 import com.huyiyu.pbac.engine.entity.Account;
 import com.huyiyu.pbac.engine.mapper.AccountMapper;
 import com.huyiyu.pbac.engine.service.IAccountService;
-import com.huyiyu.pbac.core.domain.LoginUser;
+import com.huyiyu.pbac.core.domain.PbacUser;
 import com.huyiyu.pbac.core.exception.BusiPbacException;
 import com.huyiyu.pbac.core.jwt.JwtService;
 import java.nio.charset.StandardCharsets;
@@ -37,7 +37,7 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
         .orElseThrow(() -> new BusiPbacException("用户名或密码错误"));
   }
 
-  private boolean checkPassword(LoginUser loginUser, String inputPassword) {
+  private boolean checkPassword(PbacUser loginUser, String inputPassword) {
     String username = loginUser.getUsername();
     String digestedPassword = SmUtil.sm3WithSalt(username.getBytes(StandardCharsets.UTF_8))
         .digestHex(inputPassword.toString());
@@ -46,12 +46,12 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
 
   }
 
-  private Optional<LoginUser> findAccountByUsername(String username) {
+  private Optional<PbacUser> findAccountByUsername(String username) {
     return lambdaQuery()
         .select(Account::getId, Account::getUsername, Account::getPassword)
         .eq(Account::getUsername, username)
         .oneOpt()
-        .map(AccountConvert.INSTANCE::account2LoginUser);
+        .map(PbacConvertor.INSTANCE::account2LoginUser);
 
 
   }

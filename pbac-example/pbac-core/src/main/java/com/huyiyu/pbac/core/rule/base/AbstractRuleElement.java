@@ -1,6 +1,7 @@
 package com.huyiyu.pbac.core.rule.base;
 
-import com.huyiyu.pbac.core.domain.PolicyRuleParam;
+import com.huyiyu.pbac.core.domain.PbacPolicyRule;
+import com.huyiyu.pbac.core.domain.PbacContext;
 import com.huyiyu.pbac.core.enums.ConditionType;
 import com.huyiyu.pbac.core.utils.JsonUtil;
 import java.lang.reflect.ParameterizedType;
@@ -27,10 +28,10 @@ public abstract class AbstractRuleElement<C> implements BeanNameAware {
     paramType = (Class<C>) genericSuperclass.getActualTypeArguments()[0];
   }
 
-  public abstract boolean decide(RuleContext ruleContext, C configuration);
+  public abstract boolean decide(PbacContext ruleContext, C configuration);
 
 
-  public void next(RuleContext ruleContext, PolicyRuleParam policyRuleParam,
+  public void next(PbacContext ruleContext, PbacPolicyRule policyRuleParam,
       SimpleRuleChain ruleChain) {
     boolean noneParam = paramType.isAssignableFrom(Object.class);
     C configuration = StringUtils.isNoneBlank() ? (C) NONE_PARAM
