@@ -27,17 +27,14 @@ public class SecurityConfig {
   private final static String JWT = "JWT";
 
 
-
-
   @Bean
   public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
-      PbacProperties pbacProperties, JwtService jwtService,SecurityExector securityExector) {
+      PbacProperties pbacProperties, JwtService jwtService, SecurityExector securityExector) {
 
     return http.oauth2ResourceServer(oAuth2ResourceServerSpec ->
             oAuth2ResourceServerSpec
                 .bearerTokenConverter(this::bareTokenConvert)
-                .jwt(jwtSpec -> jwtSpec
-                    .jwtDecoder(token -> Mono.just(jwtService.decode(token))))
+                .jwt(jwtSpec -> jwtSpec.jwtDecoder(token -> Mono.just(jwtService.decode(token))))
         ).csrf(csrf -> csrf.disable())
         .logout(logout -> logout.disable())
         .cors(cors -> cors.disable())
@@ -62,7 +59,8 @@ public class SecurityConfig {
     return Mono.justOrEmpty(Optional.ofNullable(first).map(BearerTokenAuthenticationToken::new));
   }
 
-  private Mono<Void> onLoginFailure(ServerWebExchange serverWebExchange, AuthenticationException e) {
+  private Mono<Void> onLoginFailure(ServerWebExchange serverWebExchange,
+      AuthenticationException e) {
     ServerHttpResponse response = serverWebExchange.getResponse();
     response.setStatusCode(HttpStatus.UNAUTHORIZED);
     return writeResponse(R.fail(e.getMessage()), response);

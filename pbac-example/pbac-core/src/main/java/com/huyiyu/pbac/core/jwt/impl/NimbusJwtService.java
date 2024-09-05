@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtException;
 import org.springframework.util.Assert;
+
 @Slf4j
 public class NimbusJwtService implements JwtService {
 
@@ -58,6 +59,7 @@ public class NimbusJwtService implements JwtService {
         .subject(user.getUsername())
         .claim(PbacUser.ACCOUNT_ID_KEY, user.getAccountId())
         .claim(PbacUser.USERNAME_KEY, user.getUsername())
+        .claim(PbacUser.AUTHORITIES_KEY, user.getRoleCodes())
         .expirationTime(DateUtil.onFutureByDuration(jwt.getExpiration()))
         .issuer(jwt.getIssuer())
         .audience(jwt.getAdience())
@@ -102,10 +104,12 @@ public class NimbusJwtService implements JwtService {
     }
   }
 
-  private PbacUser jwt2LoginUser(Jwt token) {
+  @Override
+  public PbacUser jwt2PbacUser(Jwt token) {
     PbacUser loginUser = new PbacUser();
-    loginUser.setUsername(token.getClaimAsString(PbacUser.USERNAME_KEY));
     loginUser.setAccountId(token.getClaimAsString(PbacUser.ACCOUNT_ID_KEY));
+    loginUser.setUsername(token.getClaimAsString(PbacUser.USERNAME_KEY));
+    loginUser.setRoleCodes(token.getClaimAsStringList(PbacUser.AUTHORITIES_KEY));
     return loginUser;
   }
 }

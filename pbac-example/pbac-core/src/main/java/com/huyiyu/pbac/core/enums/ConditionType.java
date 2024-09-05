@@ -1,5 +1,6 @@
 package com.huyiyu.pbac.core.enums;
 
+import java.io.Serializable;
 import java.util.Arrays;
 import java.util.Map;
 import java.util.function.Function;
@@ -9,7 +10,7 @@ import lombok.Getter;
 
 @AllArgsConstructor
 @Getter
-public enum ConditionType {
+public enum ConditionType implements Serializable {
 
   AND(1, "必要"),
   OR(2, "充分");

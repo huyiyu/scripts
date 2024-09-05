@@ -1,7 +1,11 @@
 package com.huyiyu.pbac.engine.controller;
 
+import com.huyiyu.pbac.engine.result.R;
+import com.huyiyu.pbac.engine.service.IRoleService;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.RestController;
 
 /**
  * <p>
@@ -11,8 +15,16 @@ import org.springframework.stereotype.Controller;
  * @author huyiyu
  * @since 2024-08-01
  */
-@Controller
+@RestController
 @RequestMapping("/role")
+@RequiredArgsConstructor
 public class RoleController {
+
+
+
+  R<List<String>> roleCodesByResourceId(Long id){
+
+    return R.ok();
+  }
 
 }

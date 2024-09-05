@@ -1,5 +1,6 @@
 package com.huyiyu.pbac.gateway.domain;
 
+import com.huyiyu.pbac.core.exception.BusiPbacException;
 import lombok.Data;
 import lombok.experimental.Accessors;
 
@@ -34,6 +35,15 @@ public class R<T> {
 
   public static <T> R<T> ok() {
     return ok(null);
+  }
+
+
+  public T orElseThrowException(){
+    if (code==SUCCESS_CODE){
+      return data;
+    }else {
+      throw new RuntimeException("请求出错");
+    }
   }
 
 }

@@ -1,9 +1,9 @@
 package com.huyiyu.pbac.engine.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
-import com.huyiyu.pbac.core.domain.PbacPolicyRule;
+import com.huyiyu.pbac.core.domain.PbacResource;
+import com.huyiyu.pbac.core.domain.PbacRuleResult;
 import com.huyiyu.pbac.engine.entity.PolicyRule;
-import java.util.List;
 
 /**
  * <p>
@@ -15,5 +15,5 @@ import java.util.List;
  */
 public interface IPolicyRuleService extends IService<PolicyRule> {
 
-  List<PbacPolicyRule> listPbacPolicyRuleByPolicyId(Long policyId);
+  PbacRuleResult pbacRuleResultByPolicyId(PbacResource pbacResource);
 }

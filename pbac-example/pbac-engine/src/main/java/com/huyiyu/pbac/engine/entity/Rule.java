@@ -65,12 +65,6 @@ public class Rule implements Serializable {
     private String scripts;
 
     /**
-     * 是否动态
-     */
-    @TableField("dynamic")
-    private Boolean dynamic;
-
-    /**
      * 参数描述,提供前端渲染即用户填写,json格式案例[{"name":"名称","value":"值","desc":"描述"}]
      */
     @TableField("param_desc")

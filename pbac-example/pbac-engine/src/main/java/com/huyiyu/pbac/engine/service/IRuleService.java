@@ -5,6 +5,7 @@ import com.huyiyu.pbac.engine.dto.RuleNameScriptDTO;
 import com.huyiyu.pbac.engine.entity.Rule;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * <p>
@@ -16,5 +17,5 @@ import java.util.Map;
  */
 public interface IRuleService extends IService<Rule> {
 
-  Map<Long, RuleNameScriptDTO> getHandlerNameAndScriptMapByRuleIds(List<Long> ruleList);
+  Map<Long, RuleNameScriptDTO> getHandlerNameAndScriptMapByRuleIds(Set<Long> ruleList);
 }

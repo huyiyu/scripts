@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.huyiyu.pbac.engine.convert.PbacConvertor;
 import com.huyiyu.pbac.engine.entity.Account;
 import com.huyiyu.pbac.engine.mapper.AccountMapper;
+import com.huyiyu.pbac.engine.service.IAccountRoleService;
 import com.huyiyu.pbac.engine.service.IAccountService;
 import com.huyiyu.pbac.core.domain.PbacUser;
 import com.huyiyu.pbac.core.exception.BusiPbacException;
@@ -14,6 +15,7 @@ import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
 /**
  * <p>
@@ -28,6 +30,7 @@ import org.springframework.stereotype.Service;
 public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> implements IAccountService {
 
   private final JwtService jwtService;
+  private final IAccountRoleService accountRoleService;
 
   @Override
   public String login(String username, String password) {
@@ -47,11 +50,12 @@ public class AccountServiceImpl extends ServiceImpl<AccountMapper, Account> impl
   }
 
   private Optional<PbacUser> findAccountByUsername(String username) {
+
     return lambdaQuery()
         .select(Account::getId, Account::getUsername, Account::getPassword)
         .eq(Account::getUsername, username)
         .oneOpt()
-        .map(PbacConvertor.INSTANCE::account2LoginUser);
+        .map(account -> PbacConvertor.INSTANCE.account2LoginUser(account,accountRoleService.listRoleCodesByAccountId(account.getId())));
 
 
   }

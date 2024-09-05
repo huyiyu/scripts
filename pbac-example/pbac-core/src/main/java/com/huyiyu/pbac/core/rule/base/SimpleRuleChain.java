@@ -1,39 +1,44 @@
 package com.huyiyu.pbac.core.rule.base;
 
-import com.huyiyu.pbac.core.domain.PbacPolicyRule;
+import cn.hutool.core.lang.Assert;
 import com.huyiyu.pbac.core.domain.PbacContext;
+import com.huyiyu.pbac.core.domain.PbacRuleResult.PbacPolicyRule;
+import com.huyiyu.pbac.core.exception.BusiPbacException;
+import com.huyiyu.pbac.core.exception.RuleNotFoundException;
+import com.huyiyu.pbac.core.rule.base.impl.GrooovyRule;
 import java.util.List;
 import java.util.Map;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 
+@Slf4j
 public class SimpleRuleChain implements RuleChain {
 
   private int pos = 0;
-  private Boolean result;
   private List<PbacPolicyRule> policyRuleParams;
-  private Map<String, AbstractRuleElement<?>> factory;
+  private Map<String, IPbacRule> factory;
 
-  public SimpleRuleChain(List<PbacPolicyRule> policyRuleParams, Map<String, AbstractRuleElement<?>> factory) {
+  public SimpleRuleChain(List<PbacPolicyRule> policyRuleParams, Map<String, IPbacRule> factory) {
     this.policyRuleParams = policyRuleParams;
     this.factory = factory;
   }
 
 
-  @Override
-  public void next(PbacContext ruleContext) {
+  private void internalExecuteRule(PbacContext ruleContext) {
     if (pos < policyRuleParams.size()) {
       PbacPolicyRule policyRuleParam = policyRuleParams.get(pos++);
-      AbstractRuleElement<?> abstractRuleElement = factory.get(policyRuleParam.getHandlerName());
-      abstractRuleElement.next(ruleContext, policyRuleParam, this);
+      IPbacRule pbacRule = StringUtils.isNotBlank(policyRuleParam.getScript()) ?
+          new GrooovyRule(policyRuleParam.getScript())
+          : factory.get(policyRuleParam.getHandlerName());
+      Assert.notNull(pbacRule, "规则名称不存在");
+      ruleContext.setCurrentRuleConditionType(policyRuleParam.getConditionType());
+      ruleContext.setCurrentRule(pbacRule);
+      pbacRule.executeRule(ruleContext, this, policyRuleParam.getValue());
     }
   }
 
-  public void end(boolean result) {
-    this.pos = policyRuleParams.size();
-    this.result = result;
-  }
-
   @Override
-  public boolean finalDesidission(){
-    return result;
+  public void executeRule(PbacContext ruleContext) {
+    internalExecuteRule(ruleContext);
   }
 }

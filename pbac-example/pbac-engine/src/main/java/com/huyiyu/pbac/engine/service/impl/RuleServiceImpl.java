@@ -1,16 +1,16 @@
 package com.huyiyu.pbac.engine.service.impl;
 
-import static com.huyiyu.pbac.engine.constant.PbacCacheConstant.PBAC_RULE;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.huyiyu.pbac.engine.convert.PbacConvertor;
 import com.huyiyu.pbac.engine.dto.RuleNameScriptDTO;
 import com.huyiyu.pbac.engine.entity.Rule;
 import com.huyiyu.pbac.engine.mapper.RuleMapper;
 import com.huyiyu.pbac.engine.service.IRuleService;
-import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
 
 /**
@@ -23,14 +23,15 @@ import org.springframework.stereotype.Service;
  */
 @Service
 @RequiredArgsConstructor
-public class RuleServiceImpl extends ServiceImpl<RuleMapper, Rule> implements IRuleService {
-
-
-  private final RedisTemplate redisTemplate;
+public class RuleServiceImpl extends ServiceImpl<RuleMapper, Rule> implements IRuleService{
 
   @Override
-  public Map<Long, RuleNameScriptDTO> getHandlerNameAndScriptMapByRuleIds(List<Long> ruleList) {
-
-    return Map.of();
+  public Map<Long, RuleNameScriptDTO> getHandlerNameAndScriptMapByRuleIds(Set<Long> ruleList) {
+    return lambdaQuery()
+        .select(Rule::getId, Rule::getScripts, Rule::getHandlerName)
+        .in(Rule::getId, ruleList)
+        .list()
+        .stream()
+        .collect(Collectors.toMap(Rule::getId, PbacConvertor.INSTANCE::rule2RuleNameScriptDTO));
   }
 }

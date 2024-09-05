@@ -1,13 +1,20 @@
 package com.huyiyu.pbac.gateway.pbac;
 
 
-import com.huyiyu.pbac.core.domain.PbacUser;
+import static com.huyiyu.pbac.core.constant.PbacConstant.PBAC_PATH_PREFIX;
+import static com.huyiyu.pbac.core.constant.PbacConstant.PBAC_POLICY_ID_PREFIX;
+
+import com.huyiyu.pbac.core.domain.PbacResource;
 import com.huyiyu.pbac.core.domain.PbacRuleResult;
+import com.huyiyu.pbac.core.domain.PbacUser;
 import com.huyiyu.pbac.core.exception.BusiPbacException;
-import com.huyiyu.pbac.core.domain.PbacContext;
 import com.huyiyu.pbac.core.rule.reactive.ReactiveExecutorPoint;
-import com.huyiyu.pbac.gateway.ResultUtil;
+import com.huyiyu.pbac.gateway.domain.R;
+import java.text.MessageFormat;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cloud.client.ServiceInstance;
+import org.springframework.cloud.client.discovery.ReactiveDiscoveryClient;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.data.redis.core.ReactiveRedisTemplate;
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.security.web.server.authorization.AuthorizationContext;
@@ -17,67 +24,54 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class URIReactiveExecutorPoint implements ReactiveExecutorPoint<AuthorizationContext> {
 
+  private static final ParameterizedTypeReference RESULT_TYPE = new ParameterizedTypeReference<R<PbacRuleResult>>() {
+  };
+
   private final WebClient webClient;
   private final ReactiveRedisTemplate<Object, Object> reactiveRedisTemplate;
 
+  private static final String RESOURCE_PATH = "/resource/getRuleResultByPattern";
+  private final String SERVICE_NAME_REGEX = "/pbac-\\w+(/.+)";
+
   @Override
-  public Mono<PbacContext> getPolicyRuleParam(AuthorizationContext pattern,
+  public Mono<PbacRuleResult> getPolicyRuleParam(AuthorizationContext pattern,
       PbacUser user) {
     ServerHttpRequest request = pattern.getExchange().getRequest();
-    String path = request.getPath().value();
-    String jwt = request.getHeaders().getFirst("JWT");
+    String path = getRootPattern(request);
     return this.getFromCache(path)
-        .or(httpForRuleResult(path, jwt)
-            .doOnNext(ruleResult -> putCache(path, ruleResult))
-        )
-        .map(ruleResult ->
-            new PbacContext()
-                .setPolicyId(ruleResult.getPolicyId())
-                .setResourceId(ruleResult.getResourceId())
-                .setResourceName(ruleResult.getResourceName())
-                .setPolicyRuleParamList(ruleResult.getPolicyRuleParams())
-                .setPattern(pattern)
-                .setLoginUser(user)
-        );
+        .switchIfEmpty(httpForRuleResult(path));
+
   }
 
-  private Mono<Void> putCache(String path, PbacRuleResult ruleResult) {
-    return reactiveRedisTemplate
-        .opsForValue()
-        .set(path, ruleResult.getResourceId())
-        .and(reactiveRedisTemplate.opsForValue()
-            .set(ruleResult.getResourceId(), ruleResult.getPolicyId()))
-        .and(reactiveRedisTemplate.opsForValue()
-            .set(ruleResult.getPolicyId(), ruleResult));
+  /**
+   * 去掉首层服务名
+   *
+   * @param request
+   * @return
+   */
+  private String getRootPattern(ServerHttpRequest request) {
+    String value = request.getPath().value();
+    return value.replaceAll(SERVICE_NAME_REGEX, "$1");
   }
 
 
-  private Mono<PbacRuleResult> httpForRuleResult(String path, String jwt) {
+  private Mono<PbacRuleResult> httpForRuleResult(String path) {
     return webClient.get()
-        .header("JWT", jwt)
+        .uri(MessageFormat.format("http://pbac-engine/resource/getRuleResultByPattern?pattern={0}",path))
         .exchangeToMono(clientResponse -> clientResponse.bodyToMono(
-                ResultUtil.resultType(PbacRuleResult.class))
-            .map(result -> {
-              if (result.getCode() == 0) {
-                return result.getData();
-              }
-              throw new BusiPbacException("未发现权限");
-            })
-        );
+            new ParameterizedTypeReference<R<PbacRuleResult>>() {
+            }))
+        .map(R::orElseThrowException);
   }
 
   public Mono<PbacRuleResult> getFromCache(String path) {
     return reactiveRedisTemplate
         .opsForValue()
-        .get(path)
-        .cast(Long.class)
-        .flatMap(resourceId -> reactiveRedisTemplate.opsForValue()
-            .get(resourceId)
-            .cast(Long.class)
-            .flatMap(policyId -> reactiveRedisTemplate.opsForValue()
-                .get(policyId)
-                .cast(PbacRuleResult.class)
-            )
+        .get(PBAC_PATH_PREFIX + path)
+        .cast(PbacResource.class)
+        .flatMap(pbacResource -> reactiveRedisTemplate.opsForValue()
+            .get(PBAC_POLICY_ID_PREFIX + pbacResource.getPolicyId())
+            .cast(PbacRuleResult.class)
         );
   }
 

@@ -1,27 +1,29 @@
 package com.huyiyu.pbac.core.domain;
 
+import com.huyiyu.pbac.core.enums.IdentityType;
 import java.util.Collection;
 import java.util.List;
+import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-
+@Data
 public class PbacUser implements UserDetails {
 
   public static final String USERNAME_KEY = "username";
-  public static final String PASSWORD_KEY = "password";
   public static final String ACCOUNT_ID_KEY = "accountId";
+  public static final String AUTHORITIES_KEY = "roleCodes";
 
   private String accountId;
   private String password;
   private String username;
+  private List<String> roleCodes;
 
-  private List<SimpleGrantedAuthority> authoritySuppliers;
 
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
-    return authoritySuppliers;
+    return roleCodes.stream().map(SimpleGrantedAuthority::new).toList();
   }
 
   @Override
@@ -32,21 +34,5 @@ public class PbacUser implements UserDetails {
   @Override
   public String getUsername() {
     return username;
-  }
-
-  public void setPassword(String password) {
-    this.password = password;
-  }
-
-  public void setUsername(String username) {
-    this.username = username;
-  }
-
-  public String getAccountId() {
-    return accountId;
-  }
-
-  public void setAccountId(String accountId) {
-    this.accountId = accountId;
   }
 }

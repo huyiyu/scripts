@@ -2,6 +2,7 @@ package com.huyiyu.pbac.engine.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.huyiyu.pbac.engine.entity.AccountRole;
+import java.util.List;
 
 /**
  * <p>
@@ -13,4 +14,5 @@ import com.huyiyu.pbac.engine.entity.AccountRole;
  */
 public interface IAccountRoleService extends IService<AccountRole> {
 
+  List<String> listRoleCodesByAccountId(long accountId);
 }

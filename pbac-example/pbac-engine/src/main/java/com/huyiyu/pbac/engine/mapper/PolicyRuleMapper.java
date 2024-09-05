@@ -1,7 +1,9 @@
 package com.huyiyu.pbac.engine.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.huyiyu.pbac.core.domain.PbacRuleResult.PbacPolicyRule;
 import com.huyiyu.pbac.engine.entity.PolicyRule;
+import java.util.List;
 
 /**
  * <p>
@@ -13,4 +15,5 @@ import com.huyiyu.pbac.engine.entity.PolicyRule;
  */
 public interface PolicyRuleMapper extends BaseMapper<PolicyRule> {
 
+  List<PbacPolicyRule> getPbacPolicyRuleByPolicyId(Long policyId);
 }

@@ -1,18 +1,16 @@
 package com.huyiyu.pbac.core.rule.base.impl;
 
-import com.huyiyu.pbac.core.rule.base.AbstractRuleElement;
 import com.huyiyu.pbac.core.domain.PbacContext;
-import com.huyiyu.pbac.core.rule.base.impl.DailyStratEndRule.DailyParam;
+import com.huyiyu.pbac.core.rule.base.AbstractGenericRule;
+import com.huyiyu.pbac.core.rule.base.impl.DailyStartEndRule.DailyParam;
 import java.time.LocalTime;
 import java.util.Objects;
 import lombok.Data;
 
-public class DailyStratEndRule extends AbstractRuleElement<DailyParam> {
-
+public class DailyStartEndRule extends AbstractGenericRule<DailyParam> {
 
   @Override
-  public boolean decide(PbacContext ruleContext, DailyParam configuration) {
-
+  public boolean decideWithType(PbacContext ruleContext, DailyParam configuration) {
     LocalTime now = LocalTime.now();
     return  Objects.nonNull(configuration)
         && now.isAfter(configuration.getStartTime())

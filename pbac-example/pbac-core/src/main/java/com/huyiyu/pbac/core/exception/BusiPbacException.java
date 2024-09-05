@@ -1,7 +1,5 @@
 package com.huyiyu.pbac.core.exception;
 
-import javax.naming.AuthenticationException;
-
 public class BusiPbacException extends RuntimeException {
 
   public BusiPbacException(Exception e) {

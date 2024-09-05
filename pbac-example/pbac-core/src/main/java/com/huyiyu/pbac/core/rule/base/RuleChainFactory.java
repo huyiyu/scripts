@@ -1,7 +1,8 @@
 package com.huyiyu.pbac.core.rule.base;
 
+import com.huyiyu.pbac.core.domain.PbacRuleResult;
+import com.huyiyu.pbac.core.domain.PbacRuleResult.PbacPolicyRule;
 import com.huyiyu.pbac.core.domain.PbacUser;
-import com.huyiyu.pbac.core.domain.PbacPolicyRule;
 import com.huyiyu.pbac.core.domain.PbacContext;
 import com.huyiyu.pbac.core.rule.reactive.ReactiveExecutorPoint;
 import com.huyiyu.pbac.core.rule.simply.ExecutorPoint;
@@ -13,27 +14,35 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class RuleChainFactory {
 
-  private final Map<String, AbstractRuleElement<?>> ruleElementMap;
+  private final Map<String, IPbacRule> ruleElementMap;
 
   private RuleChain createRuleChain(List<PbacPolicyRule> patternTransfer) {
     return new SimpleRuleChain(patternTransfer, ruleElementMap);
   }
 
 
-
-  private <T> boolean executor(PbacContext ruleContext) {
-    RuleChain ruleChain = createRuleChain(ruleContext.getPolicyRuleParamList());
-    ruleChain.next(ruleContext);
-    return ruleChain.finalDesidission();
+  private <T> boolean executor(PbacRuleResult pbacRuleResult, Object pattern, PbacUser pbacUser) {
+    RuleChain ruleChain = createRuleChain(pbacRuleResult.getPolicyRuleParams());
+    PbacContext pbacContext = PbacContext.builder()
+        .pattern(pattern)
+        .pbacUser(pbacUser)
+        .resourceId(pbacRuleResult.getResourceId())
+        .policyId(pbacRuleResult.getPolicyId())
+        .result(false)
+        .build();
+    ruleChain.executeRule(pbacContext);
+    return pbacContext.getResult();
   }
 
   public <T> boolean decide(ExecutorPoint<T> executorPoint, T t, PbacUser loginUser) {
-    PbacContext ruleContext = executorPoint.getPolicyRuleParam(t, loginUser);
-    return executor(ruleContext);
+    PbacRuleResult pbacRuleResult = executorPoint.getPolicyRuleParam(t, loginUser);
+    return executor(pbacRuleResult,t,loginUser);
   }
 
-  public <T> Mono<Boolean> decide(ReactiveExecutorPoint<T> executorPoint,T t, PbacUser loginUser) {
-    return executorPoint.getPolicyRuleParam(t,loginUser)
-        .map(this::executor);
+  public <T> Mono<Boolean> decide(ReactiveExecutorPoint<T> executorPoint, T pattern,
+      PbacUser pbacUser) {
+    return executorPoint.getPolicyRuleParam(pattern, pbacUser)
+        .map(pbacRuleResult -> executor(pbacRuleResult, pattern, pbacUser));
+
   }
 }

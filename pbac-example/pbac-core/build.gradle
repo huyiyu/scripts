@@ -13,6 +13,7 @@ dependencies {
     compileOnly 'org.slf4j:slf4j-api'
     compileOnly 'org.projectlombok:lombok'
     compileOnly 'io.projectreactor:reactor-core'
+    compileOnly 'org.springframework.data:spring-data-redis'
 
     annotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
