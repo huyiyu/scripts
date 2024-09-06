@@ -1,4 +1,4 @@
-package com.huyiyu.pbac.core.enums;
+package com.huyiyu.pbac.biz.enums;
 
 public enum IdentityType {
   CUSTOMER,

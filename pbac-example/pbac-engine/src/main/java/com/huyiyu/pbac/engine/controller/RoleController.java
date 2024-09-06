@@ -1,9 +1,11 @@
 package com.huyiyu.pbac.engine.controller;
 
 import com.huyiyu.pbac.engine.result.R;
+import com.huyiyu.pbac.engine.service.IRoleResourceService;
 import com.huyiyu.pbac.engine.service.IRoleService;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -20,11 +22,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class RoleController {
 
+  private final IRoleResourceService roleResourceService;
 
-
-  R<List<String>> roleCodesByResourceId(Long id){
-
-    return R.ok();
+  @GetMapping("roleCodesByResourceId")
+  public R<List<String>> roleCodesByResourceId(Long id){
+    List<String> data = roleResourceService.roleCodesByResourceId(id);
+    return R.ok(data);
   }
 
 }

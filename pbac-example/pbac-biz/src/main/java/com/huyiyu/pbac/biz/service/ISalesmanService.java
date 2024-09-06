@@ -13,4 +13,5 @@ import com.huyiyu.pbac.biz.entity.Salesman;
  */
 public interface ISalesmanService extends IService<Salesman> {
 
+  boolean isSalesman(Long accountId);
 }

@@ -18,4 +18,10 @@ import org.springframework.stereotype.Service;
 public class SalesmanServiceImpl extends ServiceImpl<SalesmanMapper, Salesman> implements
     ISalesmanService {
 
+  @Override
+  public boolean isSalesman(Long accountId) {
+    return lambdaQuery()
+        .eq(Salesman::getAccountId, accountId)
+        .exists();
+  }
 }

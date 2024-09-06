@@ -1,16 +1,16 @@
 package com.huyiyu.pbac.engine.service;
 
-import com.huyiyu.pbac.engine.entity.Area;
+import com.huyiyu.pbac.engine.entity.Role;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 /**
  * <p>
- * 地区 服务类
+ *  服务类
  * </p>
  *
  * @author huyiyu
  * @since 2024-09-06
  */
-public interface IAreaService extends IService<Area> {
+public interface IRoleService extends IService<Role> {
 
 }

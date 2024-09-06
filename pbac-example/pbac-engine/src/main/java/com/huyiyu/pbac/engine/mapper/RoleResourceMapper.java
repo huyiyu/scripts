@@ -1,16 +1,16 @@
 package com.huyiyu.pbac.engine.mapper;
 
-import com.huyiyu.pbac.engine.entity.PolicyRule;
+import com.huyiyu.pbac.engine.entity.RoleResource;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**
  * <p>
- * 规则组合表 Mapper 接口
+ * 角色资源表 Mapper 接口
  * </p>
  *
  * @author huyiyu
  * @since 2024-09-06
  */
-public interface PolicyRuleMapper extends BaseMapper<PolicyRule> {
+public interface RoleResourceMapper extends BaseMapper<RoleResource> {
 
 }

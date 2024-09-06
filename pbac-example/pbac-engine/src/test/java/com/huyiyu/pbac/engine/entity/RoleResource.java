@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.annotation.FieldFill;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import java.time.LocalDateTime;
@@ -14,7 +13,7 @@ import lombok.experimental.Accessors;
 
 /**
  * <p>
- * 鉴权规则表
+ * 角色资源表
  * </p>
  *
  * @author huyiyu
@@ -23,8 +22,8 @@ import lombok.experimental.Accessors;
 @Getter
 @Setter
 @Accessors(chain = true)
-@TableName("rule")
-public class Rule implements Serializable {
+@TableName("role_resource")
+public class RoleResource implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -35,46 +34,22 @@ public class Rule implements Serializable {
     private Long id;
 
     /**
-     * 规则定义名称
+     * 角色ID
      */
-    @TableField("name")
-    private String name;
+    @TableField("role_id")
+    private Long roleId;
 
     /**
-     * 维度
+     * 资源id
      */
-    @TableField("level")
-    private Byte level;
+    @TableField("resource_id")
+    private Long resourceId;
 
     /**
-     * 规则说明
+     * 角色编码不可修改，冗余
      */
-    @TableField("detail")
-    private String detail;
-
-    /**
-     * 指定执行器，与script二选一,handlerName优先
-     */
-    @TableField("handler_name")
-    private String handlerName;
-
-    /**
-     * 执行脚本,与handler_name 二选一,handlerName优先
-     */
-    @TableField("scripts")
-    private String scripts;
-
-    /**
-     * 是否动态
-     */
-    @TableField("dynamic")
-    private Boolean dynamic;
-
-    /**
-     * 参数描述,提供前端渲染即用户填写,json格式案例[{"name":"名称","value":"值","desc":"描述"}]
-     */
-    @TableField("param_desc")
-    private String paramDesc;
+    @TableField("role_code")
+    private String roleCode;
 
     /**
      * 创建时间
@@ -87,11 +62,4 @@ public class Rule implements Serializable {
      */
     @TableField(value = "update_time", fill = FieldFill.INSERT_UPDATE)
     private LocalDateTime updateTime;
-
-    /**
-     * 删除时间
-     */
-    @TableField("deleted_time")
-    @TableLogic
-    private LocalDateTime deletedTime;
 }

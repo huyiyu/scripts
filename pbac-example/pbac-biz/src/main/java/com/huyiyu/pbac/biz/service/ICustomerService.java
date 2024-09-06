@@ -2,6 +2,7 @@ package com.huyiyu.pbac.biz.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.huyiyu.pbac.biz.entity.Customer;
+import java.util.List;
 
 /**
  * <p>
@@ -13,4 +14,7 @@ import com.huyiyu.pbac.biz.entity.Customer;
  */
 public interface ICustomerService extends IService<Customer> {
 
+  List<String> identityListByAccountId(Long accountId);
+
+  boolean isCustomer(Long accountId);
 }

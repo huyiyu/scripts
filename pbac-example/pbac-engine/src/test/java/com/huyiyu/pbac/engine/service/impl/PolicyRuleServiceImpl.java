@@ -12,7 +12,7 @@ import org.springframework.stereotype.Service;
  * </p>
  *
  * @author huyiyu
- * @since 2024-09-05
+ * @since 2024-09-06
  */
 @Service
 public class PolicyRuleServiceImpl extends ServiceImpl<PolicyRuleMapper, PolicyRule> implements IPolicyRuleService {

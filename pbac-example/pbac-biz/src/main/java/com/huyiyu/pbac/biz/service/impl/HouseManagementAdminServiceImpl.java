@@ -19,11 +19,9 @@ public class HouseManagementAdminServiceImpl extends ServiceImpl<HouseManagement
     IHouseManagementAdminService {
 
   @Override
-  public boolean contains(Long accountId) {
+  public boolean isHouseManager(Long accountId) {
     return lambdaQuery()
-        .select(HouseManagementAdmin::getId)
         .eq(HouseManagementAdmin::getAccountId, accountId)
-        .oneOpt()
-        .isPresent();
+        .exists();
   }
 }

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Controller;
  * </p>
  *
  * @author huyiyu
- * @since 2024-09-05
+ * @since 2024-09-06
  */
 @Controller
 @RequestMapping("/policy")

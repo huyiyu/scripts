@@ -13,5 +13,5 @@ import com.huyiyu.pbac.biz.entity.HouseManagementAdmin;
  */
 public interface IHouseManagementAdminService extends IService<HouseManagementAdmin> {
 
-  boolean contains(Long accountId);
+  boolean isHouseManager(Long accountId);
 }

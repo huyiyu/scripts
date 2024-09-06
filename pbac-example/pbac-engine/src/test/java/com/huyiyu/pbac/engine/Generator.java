@@ -19,7 +19,8 @@ public class Generator {
 
   @Test
   public void generator() {
-    FastAutoGenerator.create(dataSourceProperties.getUrl(), dataSourceProperties.getUsername(),
+    FastAutoGenerator
+        .create(dataSourceProperties.getUrl(), dataSourceProperties.getUsername(),
             dataSourceProperties.getPassword())
         .globalConfig(builder -> builder
             .author("huyiyu")
