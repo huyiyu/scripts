@@ -1,23 +1,22 @@
 package com.huyiyu.pbac.gateway.config;
 
-import com.huyiyu.pbac.gateway.domain.R;
 import com.huyiyu.pbac.core.jwt.JwtService;
 import com.huyiyu.pbac.core.property.PbacProperties;
 import com.huyiyu.pbac.core.utils.JsonUtil;
+import com.huyiyu.pbac.gateway.domain.R;
 import com.huyiyu.pbac.gateway.service.impl.SecurityExector;
+import java.util.Arrays;
 import java.util.Optional;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.oauth2.server.resource.authentication.BearerTokenAuthenticationToken;
 import org.springframework.security.web.server.SecurityWebFilterChain;
-import org.springframework.security.web.server.authorization.AuthorizationContext;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
@@ -33,7 +32,7 @@ public class SecurityConfig {
 
     return http.oauth2ResourceServer(oAuth2ResourceServerSpec ->
             oAuth2ResourceServerSpec
-                .bearerTokenConverter(this::bareTokenConvert)
+                .bearerTokenConverter(serverWebExchange->bareTokenConvert(serverWebExchange,pbacProperties))
                 .jwt(jwtSpec -> jwtSpec.jwtDecoder(token -> Mono.just(jwtService.decode(token))))
         ).csrf(csrf -> csrf.disable())
         .logout(logout -> logout.disable())
@@ -51,7 +50,12 @@ public class SecurityConfig {
         .build();
   }
 
-  private Mono<Authentication> bareTokenConvert(ServerWebExchange serverWebExchange) {
+  private Mono<Authentication> bareTokenConvert(ServerWebExchange serverWebExchange,
+      PbacProperties pbacProperties) {
+    String value = serverWebExchange.getRequest().getPath().value();
+    if (Arrays.stream(pbacProperties.getPermitAllPattern()).anyMatch(str -> str.equals(value))) {
+      return Mono.empty();
+    }
     String first = serverWebExchange
         .getRequest()
         .getHeaders()
@@ -65,13 +69,6 @@ public class SecurityConfig {
     response.setStatusCode(HttpStatus.UNAUTHORIZED);
     return writeResponse(R.fail(e.getMessage()), response);
   }
-
-
-  private Mono<AuthorizationDecision> remoteAccess(Mono<Authentication> authenticationMono,
-      AuthorizationContext authorizationContext) {
-    return Mono.just(new AuthorizationDecision(true));
-  }
-
 
   private Mono<Void> accessDenied(ServerWebExchange serverWebExchange, AccessDeniedException e) {
     ServerHttpResponse response = serverWebExchange.getResponse();
