@@ -12,8 +12,17 @@ public class R<T> {
   private static final int DEFAULT_FAILURE_CODE = -1;
   private static final String SUCCESS_MSG = "success";
 
+  /**
+   * 业务body
+   */
   private T data;
+  /**
+   * 错误消息,如果成功返回OK
+   */
   private String msg;
+  /**
+   *错误码，0表示成功,非0表示失败
+   */
   private int code;
 
   public static <T> R<T> ok(T data) {

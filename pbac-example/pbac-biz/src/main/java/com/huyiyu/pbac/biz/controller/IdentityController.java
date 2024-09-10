@@ -16,6 +16,11 @@ public class IdentityController {
 
   private final ICustomerService customerService;
 
+  /**
+   *
+   * @param accountId 账号ID,每个账号唯一
+   * @return 身份列表, 房产销售,管理员，顾客
+   */
   @GetMapping
   public R<List<String>> identityListByAccountId(Long accountId) {
     Assert.notNull(accountId,"用户ID不能为空");

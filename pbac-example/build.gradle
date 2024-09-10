@@ -3,12 +3,26 @@ ext {
     set('springBootVersion', "3.3.3")
 }
 
+
+
+
+
 allprojects {
     group = 'com.huyiyu.pbac'
     version = '0.0.1-SNAPSHOT'
     repositories {
         maven {
             url 'https://maven.aliyun.com/repository/public'
+        }
+    }
+    buildscript {
+        repositories {
+            maven {
+                url 'https://maven.aliyun.com/repository/public'
+            }
+        }
+        dependencies {
+            classpath 'com.ly.smart-doc:smart-doc-gradle-plugin:3.0.7-release'
         }
     }
 }

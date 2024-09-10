@@ -6,6 +6,6 @@ import lombok.Data;
 public class RuleNameScriptDTO {
 
   private String handlerName;
-  private String script;
+  private String scripts;
 
 }

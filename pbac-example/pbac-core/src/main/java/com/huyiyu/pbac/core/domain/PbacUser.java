@@ -1,12 +1,13 @@
 package com.huyiyu.pbac.core.domain;
 
-import com.huyiyu.pbac.core.enums.IdentityType;
+
 import java.util.Collection;
 import java.util.List;
 import lombok.Data;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
 @Data
 public class PbacUser implements UserDetails {
 
@@ -18,7 +19,6 @@ public class PbacUser implements UserDetails {
   private String password;
   private String username;
   private List<String> roleCodes;
-
 
 
   @Override

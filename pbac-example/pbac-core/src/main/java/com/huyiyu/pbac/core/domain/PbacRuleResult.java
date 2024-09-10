@@ -19,7 +19,7 @@ public class PbacRuleResult implements Serializable {
   public static class PbacPolicyRule implements Serializable {
 
     private String handlerName;
-    private String script;
+    private String scripts;
     private String value;
     private ConditionType conditionType;
   }

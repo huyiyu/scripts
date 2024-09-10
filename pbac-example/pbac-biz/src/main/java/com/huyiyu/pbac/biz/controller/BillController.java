@@ -26,7 +26,6 @@ public class BillController {
 
   private final IBillService billService;
 
-
   @GetMapping("page")
   public R<Page<Bill>> page() {
     return R.ok(billService.page(Page.of(1, 10)));

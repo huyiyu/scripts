@@ -27,8 +27,8 @@ public class SimpleRuleChain implements RuleChain {
   private void internalExecuteRule(PbacContext ruleContext) {
     if (pos < policyRuleParams.size()) {
       PbacPolicyRule policyRuleParam = policyRuleParams.get(pos++);
-      IPbacRule pbacRule = StringUtils.isNotBlank(policyRuleParam.getScript()) ?
-          new GrooovyRule(policyRuleParam.getScript())
+      IPbacRule pbacRule = StringUtils.isNotBlank(policyRuleParam.getScripts()) ?
+          new GrooovyRule(policyRuleParam.getScripts())
           : factory.get(policyRuleParam.getHandlerName());
       Assert.notNull(pbacRule, "规则名称不存在");
       ruleContext.setCurrentRuleConditionType(policyRuleParam.getConditionType());

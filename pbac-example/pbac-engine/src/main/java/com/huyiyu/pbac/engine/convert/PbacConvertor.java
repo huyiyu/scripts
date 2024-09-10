@@ -22,7 +22,7 @@ public interface PbacConvertor {
   PbacResource resource2PbacResource(Resource resource);
 
   @Mapping(target = "handlerName", source = "ruleNameScriptDTO.handlerName")
-  @Mapping(target = "script", source = "ruleNameScriptDTO.script")
+  @Mapping(target = "scripts", source = "ruleNameScriptDTO.scripts")
   @Mapping(target = "value", source = "policyRule.paramValue")
   @Mapping(target = "conditionType", expression = "java(com.huyiyu.pbac.core.enums.ConditionType.of(policyRule.getConditionType()))")
   PbacPolicyRule policyRuleAndRuleNameScriptDTO2PbacPolicyRule(PolicyRule policyRule,
