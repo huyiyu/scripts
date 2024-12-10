@@ -17,6 +17,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.RequestEntity;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.CollectionUtils;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestTemplate;
 
@@ -29,7 +30,7 @@ public class IdentityRule implements IPbacRule {
   private List<String> httpForUserIdentity(String accountId) {
     return restClient
         .get()
-        .uri("http://pbac-biz/identity/identityByAccountId", Map.of("accountId", accountId))
+        .uri("http://pbac-biz/identity/identityListByAccountId?accountId={accountId}", Map.of("accountId", accountId))
         .exchange(((clientRequest, clientResponse) -> clientResponse.bodyTo(
             new ParameterizedTypeReference<R<List<String>>>() {
             }))).orElseThrowException();
@@ -43,7 +44,7 @@ public class IdentityRule implements IPbacRule {
       return redisTemplate.opsForSet().isMember(key, configuration);
     } else {
       List<String> identityList = httpForUserIdentity(accountId);
-      return identityList.contains(configuration);
+      return !CollectionUtils.isEmpty(identityList) && identityList.contains(configuration);
     }
   }
 }

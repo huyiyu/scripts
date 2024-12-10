@@ -24,13 +24,9 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class URIReactiveExecutorPoint implements ReactiveExecutorPoint<AuthorizationContext> {
 
-  private static final ParameterizedTypeReference RESULT_TYPE = new ParameterizedTypeReference<R<PbacRuleResult>>() {
-  };
-
   private final WebClient webClient;
   private final ReactiveRedisTemplate<Object, Object> reactiveRedisTemplate;
 
-  private static final String RESOURCE_PATH = "/resource/getRuleResultByPattern";
   private final String SERVICE_NAME_REGEX = "/pbac-\\w+(/.+)";
 
   @Override

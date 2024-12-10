@@ -1,3 +1,7 @@
+DROP DATABASE IF EXISTS `pbac_engine`;
+CREATE DATABASE `pbac_engine` charset utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE pbac_engine;
+SET NAMES utf8mb4;
 DROP TABLE IF EXISTS `account`;
 CREATE TABLE `account`
 (
@@ -9,7 +13,7 @@ CREATE TABLE `account`
     `deleted_time` datetime     DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间',
     PRIMARY KEY (`id`),
     UNIQUE KEY `account_pk` (`username`)
-) ENGINE=InnoDB AUTO_INCREMENT=111 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='成交单';
+) ENGINE=InnoDB AUTO_INCREMENT=111 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='成交单';
 
 
 INSERT INTO `account`
@@ -179,7 +183,7 @@ CREATE TABLE `account_role`
     `create_time` datetime    DEFAULT NULL COMMENT '创建时间',
     `update_time` datetime    DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='房管局审核员';
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='房管局审核员';
 
 
 INSERT INTO `account_role`
@@ -199,13 +203,13 @@ DROP TABLE IF EXISTS `area`;
 CREATE TABLE `area`
 (
     `id`           bigint   NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `name`         varchar(10)       DEFAULT NULL COMMENT '地区名称',
+    `name`         varchar(30)       DEFAULT NULL COMMENT '地区名称',
     `parent_id`    bigint   NOT NULL DEFAULT '-1' COMMENT '上级地区',
     `create_time`  datetime NOT NULL COMMENT '创建时间',
     `update_time`  datetime NOT NULL COMMENT '更新时间',
     `deleted_time` datetime NOT NULL DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='地区';
+) ENGINE=InnoDB AUTO_INCREMENT=64 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='地区';
 
 
 
@@ -213,13 +217,13 @@ DROP TABLE IF EXISTS `policy`;
 CREATE TABLE `policy`
 (
     `id`           bigint       NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `name`         varchar(20)  NOT NULL COMMENT '策略名称',
-    `detail`       varchar(256) NOT NULL DEFAULT '' COMMENT '策略说明',
+    `name`         varchar(50)  NOT NULL COMMENT '策略名称',
+    `detail`       varchar(500) NOT NULL DEFAULT '' COMMENT '策略说明',
     `create_time`  datetime     NOT NULL COMMENT '创建时间',
     `update_time`  datetime     NOT NULL COMMENT '更新时间',
     `deleted_time` datetime     NOT NULL DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='策略表,规定了configuration的内容';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='策略表,规定了configuration的内容';
 
 
 INSERT INTO `policy`
@@ -240,7 +244,7 @@ CREATE TABLE `policy_rule`
     `update_time`    datetime     NOT NULL COMMENT '更新时间',
     `deleted_time`   datetime     NOT NULL DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='规则组合表';
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='规则组合表';
 
 
 INSERT INTO `policy_rule`
@@ -255,14 +259,14 @@ CREATE TABLE `resource`
 (
     `id`           bigint       NOT NULL AUTO_INCREMENT COMMENT '主键',
     `policy_id`    bigint       NOT NULL COMMENT '策略ID',
-    `name`         varchar(20)  NOT NULL COMMENT '资源名称',
+    `name`         varchar(50)  NOT NULL COMMENT '资源名称',
     `pattern`      varchar(200) NOT NULL COMMENT '匹配规则,可以是精准的或者模糊的,policy 区分,因为精准的更快匹配',
     `match_type`   tinyint      NOT NULL DEFAULT '0' COMMENT '1 uri 精确匹配,2 uri 模糊匹配,3 table 匹配',
     `create_time`  datetime     NOT NULL COMMENT '创建时间',
     `update_time`  datetime     NOT NULL COMMENT '更新时间',
     `deleted_time` datetime              DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='请求客户端资源';
+) ENGINE=InnoDB AUTO_INCREMENT=3 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='请求客户端资源';
 
 
 INSERT INTO `resource`
@@ -273,12 +277,12 @@ DROP TABLE IF EXISTS `role`;
 CREATE TABLE `role`
 (
     `id`           bigint      DEFAULT NULL,
-    `name`         varchar(10) DEFAULT NULL,
+    `name`         varchar(50) DEFAULT NULL,
     `code`         varchar(10) DEFAULT NULL,
     `create_time`  datetime    DEFAULT NULL,
     `update_time`  datetime    DEFAULT NULL,
     `deleted_time` datetime    DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 
 INSERT INTO `role`
@@ -295,7 +299,7 @@ CREATE TABLE `role_resource`
     `create_time` datetime    DEFAULT NULL COMMENT '创建时间',
     `update_time` datetime    DEFAULT NULL COMMENT '更新时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='角色资源表';
+) ENGINE=InnoDB AUTO_INCREMENT=2 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='角色资源表';
 
 
 INSERT INTO `role_resource`
@@ -308,7 +312,7 @@ CREATE TABLE `rule`
     `id`           bigint       NOT NULL AUTO_INCREMENT COMMENT '主键',
     `name`         varchar(20)  NOT NULL COMMENT '规则定义名称',
     `level`        tinyint      NOT NULL DEFAULT '1' COMMENT '维度',
-    `detail`       varchar(50)  NOT NULL DEFAULT '' COMMENT '规则说明',
+    `detail`       varchar(100)  NOT NULL DEFAULT '' COMMENT '规则说明',
     `handler_name` varchar(60)  NOT NULL DEFAULT '' COMMENT '指定执行器，与script二选一,handlerName优先',
     `scripts`      varchar(500) NOT NULL DEFAULT '' COMMENT '执行脚本,与handler_name 二选一,handlerName优先',
     `dynamic`      tinyint(1) NOT NULL DEFAULT '0' COMMENT '是否动态',
@@ -317,7 +321,7 @@ CREATE TABLE `rule`
     `update_time`  datetime     NOT NULL COMMENT '更新时间',
     `deleted_time` datetime     NOT NULL DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='鉴权规则表';
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='鉴权规则表';
 
 
 INSERT INTO `rule`

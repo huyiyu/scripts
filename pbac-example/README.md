@@ -1,244 +1,258 @@
-#
+# 分布式场景下落地实践 
+
+## 背景
+
+* **权限管理**：网络安全、数据安全日益受到重视，权限管理组件能够有效防范越权访问、数据泄露等问题
+* **多维属性**：集团现有应用开发平台方案不足：（多租户、生态场景支持）无法兼容条线、机构、岗位、职务、资质等多维属性进行资源（菜单、数据等）权限控制。
+* **企业级**：行内及公司各系统使用的权限管理模式不一，通过配置、代码等方式各自实现资源权限管理，系统开发、改造、运营成本较大。
 
 
-基于策略的权限设计
-
-## 1. 背景
-> 随着勒索病毒肆意爆发、大规模敏感数据泄露、针对性的黑客攻击等各类问题的频发，信息安全已经成为全社会关注的焦点.。现有的各类安全问题绝大多数可以归结为信任问题，如特定网络边界间默认信任问题、身份伪造骗取信任问题、会话或代码执行过程中劫持信任问题等。我们需要对安全信任做更精细化的全生命周期的管理，而像ACL，RBAC，等设计方案很难做到较为严格的权限控制基础，如实现反向访问控制，ABAC整体执行能力较差(基于ABAC模型中的conf文件内部的表达式来实现),
-
-## 2. 什么是基于策略的权限设计(ACL/RBAC/ABAC/PBAC 对比)
-
-### 2.1 简单比对
-
-| 授权\属性 | 名称               | 执行描述                                                                  | 使用场景                                  | 优点                                                                                              | 缺点                                                                                                        |
-| --------- | ------------------ | ------------------------------------------------------------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| ACL       | 访问控制列表       | 为每个用户匹配不同的读写执行权限                                          | linux文件目录权限设计                     | 简单,直观                                                                                         | 权限规则随着用户数量膨胀                                                                                    |
-| RBAC      | 基于角色的权限控制 | 将相同同权限归集到角色上,为用户授予角色                                   | 大部分业务系统(腾讯云)中间件管理方案(k8s) | 权限规则收敛到角色                                                                                | 无法解决如树节点包含,时间维度,范围限定等复杂范围的权限控制,强行划分资源后也会造成角色膨胀,同时比ACL更难理解 |
-| ABAC      | 基于属性的权限控制 | 资源权限不直接和角色关联,通过描述文件的表达式计算和用户具有的属性综合判断 | 可能实现反向控制,不会造成角色的膨胀,      | 执行能力离较弱,官方标准太过固定，目前支持的产品较少（k8s由于早期采用ABAC导致整体权限配置比较复杂) |                                                                                                             |
-| PBAC      | 基于策略的权限控制 | 定义不同的策略执行器,在策略中对属用户访问的资源做匹配计算                 | authing,0信任网络搭建                     | 存在反向控制,执行能力强,策略灵活                                                                  | 缓存设计复杂,执行效率比RBAC 慢,用户权限范围视图较难展示 |
-
-### 2.2 数据库结构比对
-
-![ACL](docs/img/acl.png)
-
-![RBAC](docs/img/rbac.png)
-
-![PBAC](docs/img/pbac.png)
 
 
-### 2.3 流程比对
->RBAC和PBAC流程如下:
 
-![rbac](docs/img/rbac-flow.png)
+## PBAC 实现原理
+>分布式场景下,一般会在网关进行鉴权。按照PBAC执行时序图如下:
 
-![pbac](docs/img/pbac-flow.png)
+![pbac-flow](docs/img/pbac.png)
+分布式环境中一般由网关承载整体认证鉴权流程,而用户权限数据则作为 `resource-server`的形式为网关提供用户的资源信息，以如下登陆和认证鉴权为例
 
-### 2.4 对比分析总结
->ACL 是最简单的模型,缺点在于现实社会中大部分用户是可以分组的,通过角色的授权来减少重复的授权规则定义工作能简化操作
+###  登陆/认证流程
+> 微服务架构下,为了解耦程序,避免认证鉴权代码对业务系统的入侵，会在业务网关中统一处理登陆逻辑,使用jwt 在业务系统中传递，jwt 具有不可篡改，无状态，自动过期的特性，保证了认证授权的逻辑高度内聚。
 
-> RBAC 吸取了ACL 的教训,对角色进行授权,将相似的人归集到统一类型的角色中，并且用户和角色是多对多关系,可以一人身兼多个角色，灵活的配置出更加贴合现实场景的情况。但是对于资源的访问是以相等作为匹配原则,只能处理是或否的问题，无法处理更大范围的匹配关系。如员工只能在工作时间使用电脑访问内部数据，这里的“工作时间”便很难通过角色的对等匹配关系来描述。如果强行描述要么入侵业务(业务代码判断什么时间点是工作时间),要么角色膨胀(定义多个资源工作时间/非工作时间)
+![登陆流程](docs/img/authenciation.png)
+>如图所示: 网关只做转发，实际登陆逻辑由认证鉴权服务完成,当确认了用户信息合法之后(用户名密码正确，用户状态合法，图形验证码，短信等),返回带用户属性的 jwt。用户登陆成功
 
-> PBAC 吸取了 RBAC 的角色匹配关系的缺点,通过动态的执行器，对用户和资源以及配置条件进行求解,通过求解结果来判断是否满足从而判断是否拥有权限的方案,避免了 RBAC 带来的缺点,但是引入了更多的概念,从而使编码更加复杂。并且对缓存的设计也更难,必须区分好静态匹配（类似RBAC）和动态匹配（如根据时间轴,从属关系,树级关系等场景的匹配）
+![鉴权流程](docs/img/authorization.png)
+> 基于用户登陆成功的基础 网关获取到jwt 校验jwt合法性，获得当前用户信息。并根据访问的资源(uri)获得对应的策略执行链路，以用户，资源，环境信息为变量，通过策略链的执行来判断是否允许访问对应业务系统中的资源。当校验通过之后放行
 
-## 3. 如何落地一个基于策略的权限设计
-### 3.1 数据库设计
-![db-pbac](docs/img/db_pbac.png)
 
-> 根据上文内容取消 role resource 表,并根据实际情况修改,如图所示是一个房产销售的数据库设计demo
-* PBAC 的核心policy_define,policy_instance policy_instance_resource resource 表,
-* 其他的表作为业务场景是配的表 account 是账号表,role 是角色表 role 不再直接关联resource 
-* customer,salesman,house_management_admin 作为account 的子表
-* 其他表可按名字区分 bill 作为业务数据汇总
+## 技术实践
+> 我们充分考虑了现有技术框架选型,为了充分实现松耦合，我们选择使用webFlux版本的spring-security 作为底座。该项目优点如下：高性能,松耦合,功能完备,符合安全设计,易于扩展。缺点是: reactor 模型复杂,可能出现回调地狱。基于此我们设计改善了整体多维权限的设计。
 
->由上图可以设计几种场景 resource 可以控制所有的权限定义包含URI 或者数据库表以及记录,目前按照PBAC实现两个策略
+### spring security 原理
+>以图为例子,spring security 本质上利用了web用户自身提供的过滤器链来完善整体的权限设计。通过插入过滤器链代理能得到spring security 自带的过滤器链。如下是spring-security 的过滤器链示意图（使用了servlet 的图，官网没有webflux架构图，处理流程相似）。
 
-1. 拥有role 为 customer 的用户可以访问 bill/page 接口
-2. account 属于 house_management_admin 的用户在 2024-08-05 09:00:00 到 2024-09-05 09:00:00 时间段内可访问
+![自带过滤器链](docs/img/filterchain.png)
 
-> 基于以上两个条件实现PBAC
+![插入后的过滤器链](docs/img/filterchainproxy.png)
 
-### 3.1 spring-security 简单设计
-> spring security 是 spring 提供的用于权限校验的框架 利用其大部分的能力可以快速搭建认证鉴权系统,它的执行原理主要利用过滤器链来实现认证鉴权 通常最后一个过滤器 `AuthorizationFilter` 包含着鉴权代码,为搭建一个建议认证鉴权系统可使用下面配置代码
+>我们通过spring security 提供的配置类来配置SecurityFilterChain的整体执行逻辑代码如下
+
 ```java
-  @Bean
-  public SecurityFilterChain springFilter(HttpSecurity http,
-      UriPolicyAuthorizationManager uriPolicyAuthorizationManager)
-      throws Exception {
-    // 使用JWT 辅助鉴权 借用OAUTH 机制实现 
-    return http
-        .oauth2ResourceServer(oauthServer -> oauthServer
-            .bearerTokenResolver(new HeaderBearerTokenResolver(JWT_HEADER))
-            // 控制jwt 校验不通过失败处理
-            .authenticationEntryPoint(this::loginFailure)
-            // 控制如何将 JWT header 转化为OAUTH 需要的JWT 密钥的代码
-            .jwt(jwtConfigurer -> jwtConfigurer
-                .decoder(jwtService)
-                .jwtAuthenticationConverter(jwtService::convertJwt)
-            ))
-        // 控制用户名密码登录的uri 以及登录成功和失败的响应时间
-        .formLogin(formlogin -> formlogin
-            .loginProcessingUrl("/auth/login")
-            .successHandler(this::onLoginSuccess)
-            .failureHandler(this::loginFailure)
-        )
-        .csrf(csrf -> csrf.disable())
-        .headers(headersConfigurer -> headersConfigurer.xssProtection(
-                xssConfig -> xssConfig.headerValue(HeaderValue.ENABLED_MODE_BLOCK)
-            ).addHeaderWriter(new TraceIdHeaderWriter())
-        )
+@Bean
+public SecurityWebFilterChain securityWebFilterChain(ServerHttpSecurity http,
+      PbacProperties pbacProperties, JwtService jwtService, SecurityExector securityExector) {
+        // 此处通过配置的方式提供了jwt 的解析方式,将header 上面的 JWT 串
+        // 解析成spring security可识别的 Jwt 对象 
+    return http.oauth2ResourceServer(oAuth2ResourceServerSpec ->
+            oAuth2ResourceServerSpec
+                .bearerTokenConverter(serverWebExchange->bareTokenConvert(serverWebExchange,pbacProperties))
+                .jwt(jwtSpec -> jwtSpec.jwtDecoder(token -> Mono.just(jwtService.decode(token))))
+                
+        ).csrf(csrf -> csrf.disable())
         .logout(logout -> logout.disable())
-        // 控制PBAC入口的代码
-        .authorizeHttpRequests(auth -> auth
-            .anyRequest()
-            .access(uriPolicyAuthorizationManager)
-        )
         .cors(cors -> cors.disable())
-        // 自定义返回 UserDetail 方便脚本编写
-        .userDetailsService(userDetailsService)
-        .sessionManagement(session -> session.disable())
         .httpBasic(httpBasic -> httpBasic.disable())
-        .exceptionHandling(exceptionHandling -> exceptionHandling
-            // 控制认证不通过结果处理的代码
-            .accessDeniedHandler(this::accessDenied)
-            // 控制密码登录失败处理的带啊
-            .authenticationEntryPoint(this::loginFailure))
+        // 此处配置了permitAll 请求范围
+        // 以及通用的鉴权管理器 security 来识别策略
+        .authorizeExchange(authorizeExchangeSpec ->
+            authorizeExchangeSpec
+                .pathMatchers(pbacProperties.getPermitAllPattern()).permitAll()
+                .anyExchange()
+                .access(securityExector)
+        // 此处配置了异常处理
+        // 登陆失败处理
+        // 无权限访问处理
+        ).exceptionHandling(exceptionHandlingSpec ->
+            exceptionHandlingSpec.accessDeniedHandler(this::accessDenied)
+                .authenticationEntryPoint(this::onLoginFailure)
+        )
         .build();
-  }
+}
 ```
-### 3.2 策略定义/策略实例/资源策略
-```java 
+### 基于策略的权限控制
+
+#### 数据库表分析
+![pbac-engine](docs/img/pbac_engine.png) 
+
+- **resource**: 资源表每个资源对应系统的一个uri (http接口),每个资源绑定一个执行策略,因为资源之间访问策略大部分是相似的可以分组,而对于资源的访问方式最好是规划到不同的策略组里
+
+- **policy**: 策略是一组规则的集合,一组规则之间通过排列成有序的顺序,通过运行计算最终得到一个确定的结果（通过或不通过）
+
+- **rule**: 规则是策略的具体表现形式,通过自身条件确定自己是充分的或者是必要的规则,策略和规则是多对多的关系,如两个不同的策略可以都和时间维度的规则相关,取决于不同的访问时间,以及该规则是否是充分的需要有 **policy_rule作为中间表存储**
+- **account**: 用户表
+
+- **account-role**: 用户角色表 pbac 并非完全抛弃rbac,而是可以以配置的形式配置出pbac的执行逻辑
+- **role**: 角色表
+- **role-resource**: 角色资源表
+
+***注： account-role,role,role-resource 表不一定要存在,为适配原系统rbac可以引入,pbac讲究的是对于任意与account相关的业务如 用户岗位,或者无关的如时间节点,地点节点,都可以作为权限设计的维度。***
+
+#### 执行过程
+> 上文提到基于securityExecutor 对需要鉴权的资源(uri)进行分析,核心代码变转移到如何实现SecurityExecutor中了,securityExecutor 通过从缓存或认证鉴权服务中获得资源对应的策略链进行执行,从而决定当前用户是否有访问对应资源的权限,示例过程遵守一下规则
+
+![策略链](docs/img/policychain.png)
+
+1. 如果某个规则通过且是充分条件,则跳出规则链允许访问资源
+2. 如果某个规则不通过且是必要条件,则跳出规则链拒绝访问资源
+3. 如果不符合上述两点记录结果和前结果的与操作并进入下一规则
+4. 重复上述过程直至流程结束
+5. 如果走到最后拦截器仍然无法判断,则取记录结果（即要全部通过才算通过,有一个不通过为拒绝访问）
+
+#### 执行逻辑
+```java
+public Mono<AuthorizationDecision> check(Mono<Authentication> authentication,
+AuthorizationContext authorizationContext) {
+    ServerWebExchange exchange = authorizationContext.getExchange();
+    // 将jwt转化为用户信息,并传递要给ruleChain Factory判断
+    return authentication.filter(Authentication::isAuthenticated)
+        .map(Authentication::getPrincipal)
+        .cast(Jwt.class)
+        .map(jwtService::jwt2PbacUser)
+        // 由规则链工厂出发规则链执行
+        .flatMap(pbacUser -> ruleChainFactory.decide(uriReactiveExecutorPoint, authorizationContext, pbacUser))
+        .map(AuthorizationDecision::new);
+}
+
+// 异步转同步
+public <T> Mono<Boolean> decide(ReactiveExecutorPoint<T> executorPoint, T pattern,
+      PbacUser pbacUser) {
+    return executorPoint.getPolicyRuleParam(pattern, pbacUser)
+        .map(pbacRuleResult -> executor(pbacRuleResult, pattern, pbacUser));
+
+  }
+
+private <T> boolean executor(PbacRuleResult pbacRuleResult, Object pattern, PbacUser pbacUser) {
+    RuleChain ruleChain = createRuleChain(pbacRuleResult.getPolicyRuleParams());
+    // 构造context
+    PbacContext pbacContext = PbacContext.builder()
+        .pattern(pattern)
+        .pbacUser(pbacUser)
+        .resourceId(pbacRuleResult.getResourceId())
+        .policyId(pbacRuleResult.getPolicyId())
+        .result(false)
+        .build();
+        // 触发责任链内部迭代
+    ruleChain.executeRule(pbacContext);
+    return pbacContext.getResult();
+}
+// 规则链迭代
+public void executeRule(PbacContext ruleContext) {
+    internalExecuteRule(ruleContext);
+}
+private void internalExecuteRule(PbacContext ruleContext) {
+    // 获取规则链迭代的指针,确定是否往后走
+    if (pos < policyRuleParams.size()) {
+      PbacPolicyRule policyRuleParam = policyRuleParams.get(pos++);
+      IPbacRule pbacRule = StringUtils.isNotBlank(policyRuleParam.getScripts()) ?
+          new GrooovyRule(policyRuleParam.getScripts())
+          : factory.get(policyRuleParam.getHandlerName());
+      Assert.notNull(pbacRule, "规则名称不存在");
+      ruleContext.setCurrentRuleConditionType(policyRuleParam.getConditionType());
+      ruleContext.setCurrentRule(pbacRule);
+      // 触发链里面的规则执行
+      pbacRule.executeRule(ruleContext, this, policyRuleParam.getValue());
+    }
+}
+
+default void executeRule(PbacContext pbacContext, SimpleRuleChain ruleChain, String configuration) {
+    boolean decide = decide(pbacContext,configuration);
+    // 结果需要与上一结果与操作
+    pbacContext.setResult(pbacContext.getResult() && decide);
+    // 如果规则满足且连接是AND说明要接着判断(必要条件为true)
+    // 同理规则不满足是OR,则说明要接着判断(充分条件为false)
+    boolean needNext =
+        (decide && pbacContext.getCurrentRuleConditionType().equals(ConditionType.AND))
+            || (!decide && pbacContext.getCurrentRuleConditionType().equals(ConditionType.OR));
+    if (needNext) {
+      ruleChain.executeRule(pbacContext);
+    }
+}
+```
+
+#### 示例规则
+
+```java
 /**
- * 所有的登录成功的带啊最终都会走到check 去校验URI 对应的权限
- * 上文中access配置了所有uri 都在这里统一鉴权 如果PolicyMatcher.decide 返回true 则鉴权成功 否则失败
- * 
- */ 
-public AuthorizationDecision check(Supplier<Authentication> authentication,
-    RequestAuthorizationContext object) {
-if (authentication.get() instanceof LoginUserAcuhenticationToken loginUserAcuhenticationToken) {
-    LoginUser principal = loginUserAcuhenticationToken.getLoginUser();
-    return policyMatcher.decide(object.getRequest(), principal) ? ACCEPT : DENY;
-}
-return DENY;
-}
-```
+ * 基于开始时间结束时间的规则,该信息从数据库policyRule中获得
+ */
+public class DailyStartEndRule extends AbstractGenericRule<DailyParam> {
 
-```java
-// 通过模板方法定义policyMatcher 的实现,目前规划两种实现,基于URI的正向控制和基于数据库Table的反向控制
-@Override
-  public List<Pair<Long, String>> match(HttpServletRequest httpServletRequest) {
-    // 通过请求的路径匹配资源表对其描述
-    // 从而找到对应的policyDefine 和PolicyInstance 
-    return getResourceIdByPattern(httpServletRequest)
-        .map(resourcePolicyInstanceService::listPairByResourceId)
-        .orElse(new ArrayList<>());
-  }
-
-  // 获取执行对应的Handler 根据表中的HandlerName 和script 确定使用脚本引擎或spring 中定义好的执行器
   @Override
-  public PolicyHandler getPolicyHandler(Long policyId) {
-    PolicyDefine policy = policyDefineService.getById(policyId);
-    if (StringUtils.hasText(policy.getHandlerName()) && policyHandlers.containsKey(
-        policy.getHandlerName())) {
-      return policyHandlers.get(policy.getHandlerName());
-    } else {
-      return new GroovyPolicyHandler(policy.getScripts());
-    }
+  public boolean decideWithType(PbacContext ruleContext, DailyParam configuration) {
+    LocalTime now = LocalTime.now();
+    // 当前时间必须在配置的开始时间和结束时间中间
+    return  Objects.nonNull(configuration)
+        && now.isAfter(configuration.getStartTime())
+        && now.isBefore(configuration.getEndTime());
   }
-
-  // 获取所有的执行器执行,若有一个执行器评估返回true 则 策略通过
-  default boolean decide(P pattern, PolicyUser user) {
-    List<Pair<Long, String>> matchePolicys = match(pattern);
-    if (CollectionUtil.isNotEmpty(matchePolicys)) {
-      for (Pair<Long, String> pair : matchePolicys) {
-        PolicyHandler policyHandler = getPolicyHandler(pair.getKey());
-        if (policyHandler.decide(user, pair.getValue())) {
-          return true;
-        }
-      }
-    }
-    return false;
-  }
-```
-### 3.3 不同策略的执行器的实现
-
-1. 基于角色的执行器
-```java
-public class RolePolicyHandler implements PolicyHandler {
 
   @Data
-  public static class RoleParam{
-    private String roleCode;
+  public static final class DailyParam {
+    private LocalTime startTime;
+    private LocalTime endTime;
   }
-
-  @Override
-  public boolean decide(PolicyUser user, String policyParam) {
-    // 解析 流程实例表中的policyParam 实际内容为 {"roleCode":"customer"}
-    if (StringUtils.hasText(policyParam)) {
-      RoleParam roleParam = JsonUtil.json2Object(policyParam, RoleParam.class);
-      List<String> roles = (List<String>) user.attribute(LoginUser.ROLE_NAMES_KEY);
-      // 判断当前用户是否有该角色
-      return !CollectionUtils.isEmpty(roles) && roles.contains(roleParam.getRoleCode());
-    }
-    return false;
-  }
-}
 ```
-2. 基于时间的执行器
-
-```java
-public class TimePolicyHandler implements PolicyHandler {
-
-  private final IHouseManagementAdminService houseManagementAdminService;
-
-
-  @Data
-  public static class TimeParam {
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
-  }
-
-  @Override
-  public boolean decide(PolicyUser user, String policyParam) {
-    if (user instanceof LoginUser loginUser) {
-      // 获取accountId 先判断在houseManagement是不是存在
-      Long accountId = Long.parseLong(loginUser.attribute(LoginUser.ACCOUNT_ID_KEY).toString());
-      if (!houseManagementAdminService.contains(accountId)) {
-        return false;
-      }
-      // 在判断当前时间是不是在流程实例中配置的开始时间和结束时间的中间段
-      TimeParam timeParam = JsonUtil.json2Object(policyParam, TimeParam.class);
-      if (timeParam.getStartTime() == null || timeParam.getEndTime() == null) {
-        log.warn("该次匹配未填写开始时间和结束时间,检查policyResource配置");
-        return false;
-      }
-      return timeParam.getStartTime().isBefore(LocalDateTime.now())
-          && timeParam.getEndTime().isAfter(LocalDateTime.now());
-    }
-    return false;
-  }
-}
+## 案例实践
+```bash 
+# 1. 启动docker-compose.yml 要求的中间件mysql,redis,nacos
+docker-compose up -d
+# 2. 初始化数据库,初始化nacos
+cat docs/sql/pbac-engine.sql |docker exec -i pbac_db mysql -uroot -proot
+cat docs/sql/pbac-biz.sql |docker exec -i pbac_db mysql -uroot -proot
+# 3. 初始化nacos 密码(必要，)
+curl 'http://localhost:8848/nacos/v1/auth/users/admin' \
+  -H 'Content-Type: application/x-www-form-urlencoded' \
+  --data-raw 'password=nacos'
+# 4. 启动所有应用
+nohup ./gradlew pbac-gateway:bootRun > pbac_gateway.log 2>&1 &
+nohup ./gradlew pbac-engine:bootRun > pbac_engine.log 2>&1 &
+nohup ./gradlew pbac-biz:bootRun > pbac_biz.log 2>&1 &
+# 5.测试
+# 5.1 测试登陆 mario, 账号,需要等待服务发现成功后请求,大概需要一分钟时间
++ curl -X POST localhost/pbac-engine/account/login -d "username=mario&password=123456"
+{"data":"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpbyIsImFjY291bnRJZCI6IjEiLCJhdWQiOiJ3ZWIiLCJpc3MiOiJodHRwOi8vcGJhYy5odXlpeXUuY29tIiwicm9sZUNvZGVzIjpbImN1c3RvbWVyIl0sImV4cCI6MTczMzgyMzc3MiwiaWF0IjoxNzMzODIwMTcyLCJqdGkiOiIxIiwidXNlcm5hbWUiOiJtYXJpbyJ9.VElwrB2S2jdqVpdcbDjum1GyjtGwIXs6Fs888XfzGLdSk57GlrnhoF2PywPcBcja5HvMv2dG25s-lEpP1VpKjw","msg":"success","code":0}
++ curl -X POST localhost/pbac-engine/account/login -d "username=bowser&password=123456"
+{"data":"eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJib3dzZXIiLCJhY2NvdW50SWQiOiI1IiwiYXVkIjoid2ViIiwiaXNzIjoiaHR0cDovL3BiYWMuaHV5aXl1LmNvbSIsInJvbGVDb2RlcyI6WyJjdXN0b21lciJdLCJleHAiOjE3MzM4MjM4MDQsImlhdCI6MTczMzgyMDIwNCwianRpIjoiNSIsInVzZXJuYW1lIjoiYm93c2VyIn0.i968zfw7oC5tRUv5cjs-vfMbs-kw1rGoBZVuhS9NfI1QhtGBAl2SqPkmbjX80ZCkOFg92PflcJoe_6GA0rMcFA","msg":"success","code":0}
 ```
-## 4.总结
->ACL 是最简单的模型,缺点在于现实社会中大部分用户是可以分组的,通过角色的授权来减少重复的授权规则定义工作能简化操作
+```sql 
+-- 5.2 通过查询可知,访问billPage需要满足三个维度 1. 时间在9:00 -18:00 工作时间 2. 身份为customer 3 拥有对应的角色
+select resource.name                                                       as '资源名称',
+       policy.name                                                         as '策略名称',
+       rule.name                                                           as '规则名称',
+       pr.param_value                                                      as '参数',
+       pr.pirority                                                         as '排序',
+       case (pr.condition_type) when 1 then '必要条件' else '充分条件' end as 条件
+from resource
+         join policy on resource.policy_id = policy.id
+         join policy_rule pr on policy.id = pr.policy_id
+         join rule on pr.rule_id = rule.id
+where pattern = '/bill/page'
+order by pirority asc
+-- 5.3 通过下列sql 查询 在规定时间内只有bowser 有权限访问 mario 没权限访问
+select account.username
+from account
+left join account_role ar on account.id = ar.account_id
+left join role_resource rr on ar.role_id=rr.role_id
+left join resource on rr.resource_id = resource.id
+join pbac_biz.customer pbc  on account.id = pbc.account_id
+where resource.pattern='/bill/page'
+```
+```bash
+# 5.4 分别使用5.1 获得的 mario 和 bowser 访问 /bill/page接口 可以得到 mario 没有访问权限
+curl -X POST localhost/pbac-biz//bill/page -H 'JWT:eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJtYXJpbyIsImFjY291bnRJZCI6IjEiLCJhdWQiOiJ3ZWIiLCJpc3MiOiJodHRwOi8vcGJhYy5odXlpeXUuY29tIiwicm9sZUNvZGVzIjpbImN1c3RvbWVyIl0sImV4cCI6MTczMzgyMzc3MiwiaWF0IjoxNzMzODIwMTcyLCJqdGkiOiIxIiwidXNlcm5hbWUiOiJtYXJpbyJ9.VElwrB2S2jdqVpdcbDjum1GyjtGwIXs6Fs888XfzGLdSk57GlrnhoF2PywPcBcja5HvMv2dG25s-lEpP1VpKjw'
+{"msg":"Access Denied","code":-1}
 
-> RBAC 吸取了ACL 的教训,对角色进行授权,将相似的人归集到统一类型的角色中，并且用户和角色是多对多关系,可以一人身兼多个角色，灵活的配置出更加贴合现实场景的情况。但是对于资源的访问是以相等作为匹配原则,只能处理是或否的问题，无法处理更大范围的匹配关系。如员工只能在工作时间使用电脑访问内部数据，这里的“工作时间”便很难通过角色的对等匹配关系来描述。如果强行描述要么入侵业务(业务代码判断什么时间点是工作时间),要么角色膨胀(定义多个资源工作时间/非工作时间)
+curl localhost/pbac-biz/bill/page -H "JWT:eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJib3dzZXIiLCJhY2NvdW50SWQiOiI1IiwiYXVkIjoid2ViIiwiaXNzIjoiaHR0cDovL3BiYWMuaHV5aXl1LmNvbSIsInJvbGVDb2RlcyI6WyJjdXN0b21lciJdLCJleHAiOjE3MzM4Mjc0ODYsImlhdCI6MTczMzgyMzg4NiwianRpIjoiNSIsInVzZXJuYW1lIjoiYm93c2VyIn0.N59fcWsmLHrFCYYOj0nxuvp7csShBG2Nw4L-rjrG_SnXUSKAhNJImFmIwgj7LVjfxIt9K0rSjsW8ilAyheIvPw"
 
-> PBAC 吸取了 RBAC 的角色匹配关系的缺点,通过动态的执行器，对用户和资源以及配置条件进行求解,通过求解结果来判断是否满足从而判断是否拥有权限的方案,避免了 RBAC 带来的缺点,但是引入了更多的概念,从而使编码更加复杂。并且对缓存的设计也更难,必须区分好静态匹配（类似RBAC）和动态匹配（如根据时间轴,从属关系,树级关系等场景的匹配）
 
-1. 没有一项技术能完美解决所有问题又没有缺点(人月神话中描述的银弹是不存在的)
-2. 使用PBAC不意味着完全放弃RBAC 对于URI 资源访问,为了避免问题复杂化RBAC是一个主要方案,可以辅助一些其他策略做补充
-3. 对于数据权限的设计目前没有一种完美的方案可以规避所有问题,执行效率,学习成本,校验准确率形成不可能三角三者只能选取其二(尤其是面对列表范围问题)
+{"data":{"records":[{"id":1,"descriptions":"万科金域榕郡","price":2500000.00,"firstPrice":750000.00,"salesmanId":1,"customerId":1,"areaId":1,"areaName":"福州市","billStatus":1,"createTime":"2024-08-01T01:33:24","updateTime":"2024-08-01T01:33:24","deletedTime":"1000-01-01T00:00:00"},{"id":2,"descriptions":"世茂云锦","price":3000000.00,"firstPrice":900000.00,"salesmanId":2,"customerId":3,"areaId":2,"areaName":"厦门市","billStatus":2,"createTime":"2024-08-01T01:33:24","updateTime":"2024-08-01T01:33:24","deletedTime":"1000-01-01T00:00:00"},{"id":3,"descriptions":"融信白金湾","price":3200000.00,"firstPrice":960000.00,"salesmanId":3,"customerId":5,"areaId":3,"areaName":"泉州市","billStatus":3,"createTime":"2024-08-01T01:33:24","updateTime":"2024-08-01T01:33:24","deletedTime":"1000-01-01T00:00:00"},{"id":4,"descriptions":"恒大山水城","price":4000000.00,"firstPrice":1200000.00,"salesmanId":4,"customerId":7,"areaId":4,"areaName":"宁德市","billStatus":1,"createTime":"2024-08-01T01:33:24","updateTime":"2024-08-01T01:33:24","deletedTime":"1000-01-01T00:00:00"},{"id":5,"descriptions":"融信江南","price":4200000.00,"firstPrice":1260000.00,"salesmanId":5,"customerId":9,"areaId":5,"areaName":"莆田市","billStatus":2,"createTime":"2024-08-01T01:33:24","updateTime":"2024-08-01T01:33:24","deletedTime":"1000-01-01T00:00:00"},{"id":6,"descriptions":"正荣润城","price":2100000.00,"firstPrice":630000.00,"salesmanId":6,"customerId":11,"areaId":6,"areaName":"龙岩市","billStatus":3,"createTime":"2024-08-01T01:33:24","updateTime":"2024-08-01T01:33:24","deletedTime":"1000-01-01T00:00:00"},{"id":7,"descriptions":"新城璟悦城","price":2200000.00,"firstPrice":660000.00,"salesmanId":7,"customerId":13,"areaId":7,"areaName":"三明市","billStatus":1,"createTime":"2024-08-01T01:33:24","updateTime":"2024-08-01T01:33:24","deletedTime":"1000-01-01T00:00:00"},{"id":8,"descriptions":"万科金域榕郡","price":2300000.00,"firstPrice":690000.00,"salesmanId":8,"customerId":15,"areaId":8,"areaName":"南平市","billStatus":2,"createTime":"2024-08-01T01:33:24","updateTime":"2024-08-01T01:33:24","deletedTime":"1000-01-01T00:00:00"},{"id":9,"descriptions":"世茂云锦","price":2800000.00,"firstPrice":840000.00,"salesmanId":9,"customerId":17,"areaId":9,"areaName":"漳州市","billStatus":3,"createTime":"2024-08-01T01:33:24","updateTime":"2024-08-01T01:33:24","deletedTime":"1000-01-01T00:00:00"},{"id":10,"descriptions":"融信白金湾","price":2600000.00,"firstPrice":780000.00,"salesmanId":10,"customerId":19,"areaId":10,"areaName":"福州市","billStatus":1,"createTime":"2024-08-01T01:33:24","updateTime":"2024-08-01T01:33:24","deletedTime":"1000-01-01T00:00:00"}],"total":21,"size":10,"current":1,"pages":3},"msg":"success","code":0}
 
-## 5. 展望
-### 5.1 结合规则引擎动态Handler
-> 实际工作中为了保证时效性,会将执行器的代码写成动态语言,比如groovy 放到policy_define 的script 中,通过脚本控制有实时生效和灵活的优点；同时也有着效率比spring bean 慢并且对于不熟悉的开发人员可能存在注入的风险。实际工作中要权衡两者利弊,如果为了性能或者没有进行太过于复杂的业务可长期使用 Spring Bean的方案,若有突发情况可通过开启脚本Handler 实现一些非常规的权限校验。
+# 6. 结束所有应用
+jps|grep GradleWrapperMain |awk '{print $1}'|xargs -I {} kill -9 {}
+```
+## 展望
 
-### 5.2 数据权限设计(基于授权前后机制的拦截)
-> 
-1. 对数据权限的校验得树立反向概念,数据库表或数据库表中的记录才是所谓的 “资源”(表通常认为是记录的模糊匹配,类似基于 antMatcher 的URI路径,与精确匹配的URI路径一致),转变之后才能考虑如何设计这个数据权限 (总结上文 表或记录是上文提及的resource 资源)
-2. 数据库的鉴权和URI的略有不同主要体现在对数据库的操作不同可分为单次操作和批量操作
-    * 对于ById 的操作无论是 修改/删除/更新 我们可以直接拒绝返回权限不足。
-    * 而对于 Range 类型的操作如: 查看分页信息,按条件批量更新(不允许这么做),批量插入数据(大概率不需要权限校验) 却不能直接返回拒绝,也不能简单过滤掉数据因为这样返回的数据可能与业务场景不一样,本来分页需要返回10条 由于数据权限的过滤却只能返回5条,所以对于该困难有以下几种解决方案。
-        * 干预 PreAuth 阶段,将数据权限的内容编程sql 中的条件拼接到执行的语句中,这样不会影响返回条数，但只支持单表查询,对于多表查询可能会有歧义
-        * 干预 PostAuth 阶段,通过流式查询返回数据,如果发现实际与预期不符合再多查几条,这样绑架了业务一定要使用流式查询或者游标去做。
-3. 综上,数据权限的方案一般都没有特别完整的方案,要结合自己的系统考虑,无论是通过PreAuth 阶段还是流式查询都有其优缺点。要根据实际情况给出方案,未来考虑通过DataSourceProxy 的方案对执行SQL做数据权限校验。 等待大家一起完善方案
+1. 对于权限设计,当前仅是demo,具体设计应贴合实际业务场景,如一般时间约定会采用 cron表达式进行解析而非简单的`startTime`,`endTime`。
+2. 该思路可以扩展到数据权限,此时访问的资源则变成数据库中的表,或者表中的记录，通过限制不同用户对整个表的数据的访问来做到整体数据权限的维度。目前已实现了基于jsqlparser 方案的数据权限的限制
+

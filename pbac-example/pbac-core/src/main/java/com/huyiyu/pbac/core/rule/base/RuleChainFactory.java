@@ -28,7 +28,7 @@ public class RuleChainFactory {
         .pbacUser(pbacUser)
         .resourceId(pbacRuleResult.getResourceId())
         .policyId(pbacRuleResult.getPolicyId())
-        .result(false)
+        .result(true)
         .build();
     ruleChain.executeRule(pbacContext);
     return pbacContext.getResult();

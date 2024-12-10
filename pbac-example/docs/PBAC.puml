@@ -7,3 +7,36 @@
 网关 -> 业务系统: 放行
 业务系统 -> 用户: 返回响应信息
 @enduml
+
+
+
+@startuml authenciation
+用户 -> 网关: 请求认证服务登陆系统，提交用户名密码
+网关 -> 网关: permitAll(此类接口放行)
+网关 -> 认证鉴权服务: 转发请求
+认证鉴权服务-> 认证鉴权服务: 校验用户登陆信息
+认证鉴权服务-> 网关: 生成JWT 信息返回
+网关 -> 用户: 登陆成功,获得JWT
+@enduml
+
+
+@startuml authorization
+用户 -> 网关: 请求业务系统,携带jwt
+网关 -> 网关: 解析校验jwt 合法性,获取用户信息
+网关 -> 认证鉴权服务: 通过资源获取对应的授权管理流程(策略执行链)
+网关 -> 网关: 用户信息,资源,环境信息作为变量 执行策略链
+网关 -> 业务系统: 校验通过,放行
+业务系统 -> 网关: 返回用户响应信息
+网关 -> 用户: 获得用户信息
+@enduml
+
+@startuml policyChain
+start
+repeat
+    :read data;
+    :generate diagrams;
+repeat while (more data?)
+stop
+
+@@enduml
+

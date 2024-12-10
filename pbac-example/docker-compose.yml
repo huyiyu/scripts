@@ -1,11 +1,12 @@
 version: '3.1'
 services:
   db:
+    container_name: pbac_db
     image: mysql
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: "[>tRkC9SS+([l-x:ZX~Z"
-      MYSQL_DATABASE: "db_pbac"
+      MYSQL_ROOT_PASSWORD: "root"
+      MYSQL_DATABASE: "pbac_engine"
       MYSQL_USER: "pbac"
       MYSQL_PASSWORD: "123456"
     volumes:
@@ -13,6 +14,7 @@ services:
     ports:
       - 3306:3306
   nacos:
+    container_name: pbac_registry
     image: nacos/nacos-server:latest
     restart: always
     environment:
@@ -26,6 +28,7 @@ services:
       - 8848:8848
       - 9848:9848
   redis:
+    container_name: pbac_redis
     image: redis:6.2.14
     restart: always
     ports:

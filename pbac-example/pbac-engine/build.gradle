@@ -12,7 +12,6 @@ dependencies {
     testAnnotationProcessor 'org.projectlombok:lombok'
     testImplementation 'org.springframework.boot:spring-boot-starter-test'
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
-    compileOnly 'org.mapstruct:mapstruct:1.6.0'
     annotationProcessor 'org.mapstruct:mapstruct-processor:1.6.0'
     testImplementation'com.baomidou:mybatis-plus-generator:3.5.7'
     testImplementation 'org.freemarker:freemarker'
@@ -21,6 +20,7 @@ dependencies {
 
 
     api project(':pbac-core')
+    implementation 'org.mapstruct:mapstruct:1.6.0'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     implementation 'com.alibaba.cloud:spring-cloud-starter-alibaba-nacos-discovery'
     implementation 'org.springframework.cloud:spring-cloud-starter-loadbalancer'

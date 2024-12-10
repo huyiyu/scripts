@@ -1,3 +1,7 @@
+DROP DATABASE IF EXISTS `pbac_biz`;
+CREATE DATABASE `pbac_biz` charset utf8mb4 COLLATE utf8mb4_unicode_ci;
+SET NAMES utf8mb4;
+USE pbac_biz;
 DROP TABLE IF EXISTS `bill`;
 CREATE TABLE `bill`
 (
@@ -14,7 +18,7 @@ CREATE TABLE `bill`
     `update_time`  datetime       DEFAULT NULL COMMENT '更新时间',
     `deleted_time` datetime       DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='成交单';
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='成交单';
 
 
 INSERT INTO `bill`
@@ -67,12 +71,12 @@ CREATE TABLE `customer`
 (
     `id`           bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
     `account_id`   bigint      DEFAULT NULL COMMENT '登录账号ID',
-    `nick_name`    varchar(10) DEFAULT NULL COMMENT '昵称',
+    `nick_name`    varchar(20) DEFAULT NULL COMMENT '昵称',
     `create_time`  datetime    DEFAULT NULL COMMENT '创建时间',
     `update_time`  datetime    DEFAULT NULL COMMENT '更新时间',
     `deleted_time` datetime    DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='客户表';
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='客户表';
 
 
 INSERT INTO `customer`
@@ -92,13 +96,13 @@ DROP TABLE IF EXISTS `department`;
 CREATE TABLE `department`
 (
     `id`           bigint NOT NULL AUTO_INCREMENT COMMENT '主键',
-    `name`         varchar(10) DEFAULT NULL COMMENT '部门名称',
+    `name`         varchar(20) DEFAULT NULL COMMENT '部门名称',
     `parent_id`    bigint      DEFAULT NULL COMMENT '上级部门ID',
     `create_time`  datetime    DEFAULT NULL COMMENT '创建时间',
     `update_time`  datetime    DEFAULT NULL COMMENT '更新时间',
     `deleted_time` datetime    DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='房管局审核员';
+) ENGINE=InnoDB AUTO_INCREMENT=18 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='房管局审核员';
 
 
 INSERT INTO `department`
@@ -132,7 +136,7 @@ CREATE TABLE `house_management_admin`
     `update_time`  datetime    DEFAULT NULL COMMENT '更新时间',
     `deleted_time` datetime    DEFAULT '1000-01-01 00:00:00' COMMENT '删除时间',
     PRIMARY KEY (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci COMMENT='房管局审核员';
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='房管局审核员';
 
 
 INSERT INTO `house_management_admin`

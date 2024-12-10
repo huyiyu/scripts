@@ -21,6 +21,6 @@ public class PbacContext {
   @Setter
   private ConditionType currentRuleConditionType;
   @Setter
-  private Boolean result;
+  private Boolean result = true;
 }
 

@@ -7,11 +7,14 @@ import com.huyiyu.pbac.engine.entity.RoleResource;
 import com.huyiyu.pbac.engine.mapper.RoleResourceMapper;
 import com.huyiyu.pbac.engine.service.IRoleResourceService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+
+import java.util.Collection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.CollectionUtils;
 
 /**
  * <p>
@@ -28,13 +31,15 @@ public class RoleResourceServiceImpl extends ServiceImpl<RoleResourceMapper, Rol
   private final RedisTemplate redisTemplate;
 
   @Override
-  public List<String> roleCodesByResourceId(Long id) {
+  public Collection<String> roleCodesByResourceId(Long id) {
     String key = PBAC_ROLE_CODES_PREFIX + id;
     if (!redisTemplate.hasKey(key)){
       synchronized (key){
         if (!redisTemplate.hasKey(key)){
           List<String> roleCodes = roleCodesByResourceIdFromDB(id);
-          redisTemplate.opsForSet().add(key,roleCodes.toArray());
+          if (!CollectionUtils.isEmpty(roleCodes)){
+            redisTemplate.opsForSet().add(key,roleCodes.toArray());
+          }
         }
       }
     }

@@ -2,6 +2,8 @@ package com.huyiyu.pbac.biz.controller;
 
 import com.huyiyu.pbac.biz.result.R;
 import com.huyiyu.pbac.biz.service.ICustomerService;
+
+import java.util.Collection;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.util.Assert;
@@ -21,8 +23,8 @@ public class IdentityController {
    * @param accountId 账号ID,每个账号唯一
    * @return 身份列表, 房产销售,管理员，顾客
    */
-  @GetMapping
-  public R<List<String>> identityListByAccountId(Long accountId) {
+  @GetMapping("identityListByAccountId")
+  public R<Collection<String>> identityListByAccountId(Long accountId) {
     Assert.notNull(accountId,"用户ID不能为空");
     return R.ok(customerService.identityListByAccountId(accountId));
   }

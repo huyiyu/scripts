@@ -9,7 +9,8 @@ public interface IPbacRule {
 
   default void executeRule(PbacContext pbacContext, SimpleRuleChain ruleChain, String configuration) {
     boolean decide = decide(pbacContext,configuration);
-    pbacContext.setResult(decide);
+    // 结果需要与上一结果与操作
+    pbacContext.setResult(pbacContext.getResult() && decide);
     // 如果规则满足且连接是AND说明要接着判断(必要条件为true)
     // 同理规则不满足是OR,则说明要接着判断(充分条件为false)
     boolean needNext =

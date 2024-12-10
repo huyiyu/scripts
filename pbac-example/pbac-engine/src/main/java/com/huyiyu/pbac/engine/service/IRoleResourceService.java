@@ -2,6 +2,8 @@ package com.huyiyu.pbac.engine.service;
 
 import com.huyiyu.pbac.engine.entity.RoleResource;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -14,5 +16,5 @@ import java.util.List;
  */
 public interface IRoleResourceService extends IService<RoleResource> {
 
-  List<String> roleCodesByResourceId(Long id);
+  Collection<String> roleCodesByResourceId(Long id);
 }
