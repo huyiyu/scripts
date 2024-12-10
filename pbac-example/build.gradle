@@ -1,11 +1,13 @@
-ext {
-    set('springCloudVersion', "2023.0.3")
-    set('springBootVersion', "3.3.3")
+plugins {
+    id 'org.springframework.boot' version '3.3.3' apply false
+    id 'io.spring.dependency-management' version '1.1.6' apply false
 }
 
-
-
-
+ext {
+    springCloudVersion = "2023.0.3"
+    springBootVersion = "3.3.3"
+    service = subprojects - project(':pbac-core')
+}
 
 allprojects {
     group = 'com.huyiyu.pbac'
@@ -15,27 +17,23 @@ allprojects {
             url 'https://maven.aliyun.com/repository/public'
         }
     }
-    buildscript {
-        repositories {
-            maven {
-                url 'https://maven.aliyun.com/repository/public'
-            }
-        }
-        dependencies {
-            classpath 'com.ly.smart-doc:smart-doc-gradle-plugin:3.0.7-release'
-        }
-    }
 }
 subprojects {
     apply plugin: 'java'
     apply plugin: 'java-library'
+    apply plugin: 'io.spring.dependency-management'
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(21)
+            languageVersion = JavaLanguageVersion.of(17)
         }
     }
 
     tasks.named('test') {
         useJUnitPlatform()
     }
+}
+
+configure(service){
+    apply plugin: 'org.springframework.boot'
+
 }
