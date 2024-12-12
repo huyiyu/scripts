@@ -11,6 +11,8 @@ import com.huyiyu.pbac.core.exception.BusiPbacException;
 import com.huyiyu.pbac.core.rule.reactive.ReactiveExecutorPoint;
 import com.huyiyu.pbac.gateway.domain.R;
 import java.text.MessageFormat;
+import java.util.Map;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.cloud.client.ServiceInstance;
 import org.springframework.cloud.client.discovery.ReactiveDiscoveryClient;
@@ -53,9 +55,9 @@ public class URIReactiveExecutorPoint implements ReactiveExecutorPoint<Authoriza
 
   private Mono<PbacRuleResult> httpForRuleResult(String path) {
     return webClient.get()
-        .uri(MessageFormat.format("http://pbac-engine/resource/getRuleResultByPattern?pattern={0}",path))
-        .exchangeToMono(clientResponse -> clientResponse.bodyToMono(
-            new ParameterizedTypeReference<R<PbacRuleResult>>() {
+        .uri("http://pbac-engine/resource/getRuleResultByPattern?pattern={path}", Map.of("path",path))
+        .exchangeToMono(clientResponse -> clientResponse
+                .bodyToMono(new ParameterizedTypeReference<R<PbacRuleResult>>() {
             }))
         .map(R::orElseThrowException);
   }
