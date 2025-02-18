@@ -1,0 +1,21 @@
+services:
+  rocketmq-proxy:
+    image: apache/rocketmq:5.3.1
+    container_name: rmqproxy
+    ports:
+    - 8081:8081
+    - 8080:8080
+    volumes:
+    - ./config/proxy/proxy.json:/etc/proxy.json
+    networks:
+    - rocketmq
+    depends_on:
+    - broker1-s
+    - broker1-s2
+    - broker1-m
+    - namesrv1
+    - namesrv2
+    - namesrv3
+    environment:
+      NAMESRV_ADDR: namesrv1:9876;namesrv2:9876;namesrv3:9876
+    command: sh mqproxy -pc /etc/proxy.json

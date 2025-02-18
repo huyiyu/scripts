@@ -1,0 +1,41 @@
+plugins {
+    id 'org.springframework.boot' version '3.4.2' apply false
+    id 'io.spring.dependency-management' version '1.1.7' apply false
+}
+allprojects {
+    repositories {
+        maven {
+            url 'https://maven.aliyun.com/repository/public'
+        }
+    }
+    group = 'com.huyiyu.rocketmq'
+    version = '0.0.1-SNAPSHOT'
+
+}
+
+
+subprojects {
+    apply plugin: 'java-library'
+    apply plugin: 'java'
+    apply plugin: 'org.springframework.boot'
+    apply plugin: 'io.spring.dependency-management'
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(17)
+        }
+    }
+
+    dependencies {
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+        compileOnly 'org.slf4j:slf4j-api'
+    }
+
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}
+
+
+

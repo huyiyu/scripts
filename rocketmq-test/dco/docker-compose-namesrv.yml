@@ -1,0 +1,28 @@
+services:
+  namesrv1:
+    image: apache/rocketmq:5.3.1
+    container_name: rmqnamesrv1
+    networks:
+    - rocketmq
+    command: sh mqnamesrv -c /etc/namesrv.properties
+    volumes:
+    - ./config/namesrv/namesrv1.properties:/etc/namesrv.properties
+  namesrv2:
+    image: apache/rocketmq:5.3.1
+    container_name: rmqnamesrv2
+    networks:
+    - rocketmq
+    command: sh mqnamesrv -c /etc/namesrv.properties
+    volumes:
+    - ./config/namesrv/namesrv2.properties:/etc/namesrv.properties
+  namesrv3:
+    image: apache/rocketmq:5.3.1
+    container_name: rmqnamesrv3
+    networks:
+    - rocketmq
+    command: sh mqnamesrv -c /etc/namesrv.properties
+    volumes:
+    - ./config/namesrv/namesrv3.properties:/etc/namesrv.properties
+networks:
+  rocketmq:
+    driver: bridge

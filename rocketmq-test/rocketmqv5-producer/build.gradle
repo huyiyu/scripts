@@ -1,0 +1,5 @@
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.apache.rocketmq:rocketmq-v5-client-spring-boot-starter:2.3.2'
+}

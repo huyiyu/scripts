@@ -1,3 +1,6 @@
 **/.idea/**
 **/target/
 **/*.iml
+**build/
+rocketmq-test/dco/data
+**.gradle/

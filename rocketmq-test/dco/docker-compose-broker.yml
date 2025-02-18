@@ -1,0 +1,81 @@
+services:
+  broker1-s:
+    image: apache/rocketmq:5.3.1
+    container_name: broker1-s
+    hostname: broker1-s
+    environment:
+      NAMESRV_ADDR: namesrv1:9876;namesrv2:9876;namesrv3:9876
+    depends_on:
+    - namesrv1
+    - namesrv2
+    - namesrv3
+    networks:
+    - rocketmq
+    command: sh mqbroker -c /etc/broker.properties
+    volumes:
+    - ./config/broker/broker1-s.properties:/etc/broker.properties
+    - ./data/broker1-s:/data
+  broker1-s2:
+    image: apache/rocketmq:5.3.1
+    container_name: broker1-s2
+    hostname: broker1-s2
+    environment:
+      NAMESRV_ADDR: namesrv1:9876;namesrv2:9876;namesrv3:9876
+    depends_on:
+    - namesrv1
+    - namesrv2
+    - namesrv3
+    networks:
+    - rocketmq
+    command: sh mqbroker -c /etc/broker.properties
+    volumes:
+    - ./config/broker/broker1-s2.properties:/etc/broker.properties
+    - ./data/broker1-s2:/data
+  broker1-m:
+    image: apache/rocketmq:5.3.1
+    container_name: broker1-m
+    hostname: broker1-m
+    environment:
+      NAMESRV_ADDR: namesrv1:9876;namesrv2:9876;namesrv3:9876
+    depends_on:
+    - namesrv1
+    - namesrv2
+    - namesrv3
+    networks:
+    - rocketmq
+    command: sh mqbroker -c /etc/broker.properties
+    volumes:
+    - ./config/broker/broker1-m.properties:/etc/broker.properties
+    - ./data/broker1-m:/data
+  # broker2-s:
+  #   image: apache/rocketmq:5.3.1
+  #   container_name: broker2-s
+  #   hostname: broker2-s
+  #   environment:
+  #     NAMESRV_ADDR: namesrv1:9876;namesrv2:9876;namesrv3:9876
+  #   depends_on:
+  #   - namesrv1
+  #   - namesrv2
+  #   - namesrv3
+  #   networks:
+  #   - rocketmq
+  #   command: sh mqbroker -c /etc/broker.properties
+  #   volumes:
+  #   - ./config/broker/broker2-s.properties:/etc/broker.properties
+  #   - ./data/broker2-s:/data
+  # broker2-m:
+  #   image: apache/rocketmq:5.3.1
+  #   container_name: broker2-m
+  #   hostname: broker2-m
+  #   environment:
+  #     NAMESRV_ADDR: namesrv1:9876;namesrv2:9876;namesrv3:9876
+  #   depends_on:
+  #   - namesrv1
+  #   - namesrv2
+  #   - namesrv3
+  #   networks:
+  #   - rocketmq
+  #   command: sh mqbroker -c /etc/broker.properties
+  #   volumes:
+  #   - ./config/broker/broker2-m.properties:/etc/broker.properties
+  #   - ./data/broker2-m:/data

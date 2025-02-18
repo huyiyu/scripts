@@ -1,0 +1,26 @@
+services:
+  rocketmq-exporter:
+    image: apache/rocketmq-exporter:0.0.2-SNAPSHOT
+    container_name: rocketmq-exporter
+    environment:
+      rocketmq.config.namesrvAddr: namesrv1:9876;namesrv2:9876;namesrv3:9876
+      rocketmq.config.rocketmqVersion: V5_3_1
+    ports:
+    - 5557:5557
+    networks:
+    - rocketmq
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: prometheus
+    ports:
+    - 9090:9090
+    volumes:
+    - ./config/monitor/prometheus.yml:/etc/prometheus/prometheus.yml
+    networks:
+    - rocketmq
+  grafana:
+    image: grafana/grafana:11.5.1
+    ports:
+    - 3000:3000
+    networks:
+    - rocketmq
