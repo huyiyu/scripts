@@ -3,6 +3,7 @@ services:
     image: apache/rocketmq:5.3.1
     container_name: broker1
     hostname: broker1
+    network_mode: host
     depends_on:
     - namesrv1
     - namesrv2
@@ -17,6 +18,7 @@ services:
     image: apache/rocketmq:5.3.1
     container_name: broker2
     hostname: broker2
+    network_mode: host
     depends_on:
     - namesrv1
     - namesrv2
@@ -32,6 +34,7 @@ services:
     image: apache/rocketmq:5.3.1
     container_name: broker3
     hostname: broker3
+    network_mode: host
     depends_on:
     - namesrv1
     - namesrv2

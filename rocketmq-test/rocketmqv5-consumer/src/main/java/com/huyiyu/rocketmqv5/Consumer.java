@@ -15,7 +15,7 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 @Slf4j
-@RocketMQMessageListener(topic = "ROCKETMQ-V5-TEST", consumerGroup = "rocketmq-v5",tag = "*",filterExpressionType = "tag")
+@RocketMQMessageListener(topic = "ROCKETMQ-V5-TEST", consumerGroup = "rocketmq-v5",tag = "*")
 @Component
 public class Consumer implements RocketMQListener {
 
