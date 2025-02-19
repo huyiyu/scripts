@@ -6,13 +6,13 @@ services:
     - 8081:8081
     - 8080:8080
     volumes:
-    - ./config/proxy/proxy.json:/etc/proxy.json
+    - ./config/proxy.json:/etc/proxy.json
     networks:
     - rocketmq
     depends_on:
-    - broker1-s
-    - broker1-s2
-    - broker1-m
+    - broker1
+    - broker2
+    - broker3
     - namesrv1
     - namesrv2
     - namesrv3

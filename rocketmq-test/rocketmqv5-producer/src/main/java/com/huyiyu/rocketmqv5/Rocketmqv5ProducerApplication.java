@@ -27,7 +27,7 @@ public class Rocketmqv5ProducerApplication {
 
     @GetMapping("send")
     public String sendMessage(){
-        rocketMQClientTemplate.convertAndSend("rocketmq-v5-test",appName+":send");
+        rocketMQClientTemplate.convertAndSend("ROCKETMQ-V5-TEST",appName+":send");
         return "OK";
     }
 

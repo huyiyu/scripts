@@ -1,0 +1,39 @@
+services:
+  controller:
+    image: apache/rocketmq:5.3.1
+    container_name: controller
+    network_mode: host
+    command: ./mqcontroller -c /etc/controller.properties
+    volumes:
+      - ./config/controller.properties:/etc/controller.properties
+  namesrv:
+    image: apache/rocketmq:5.3.1
+    container_name: rmqnamesrv1
+    network_mode: host
+    command: sh mqnamesrv
+  broker:
+    image: apache/rocketmq:5.3.1
+    container_name: broker
+    hostname: broker
+    network_mode: host
+    depends_on:
+      - controller
+      - namesrv
+    command: sh mqbroker -c /etc/broker.properties
+    volumes:
+      - ./config/broker.properties:/etc/broker.properties
+      - ./data/broker:/home/rocketmq/store
+  # proxy 一定不能提前启动 否则会导致broker写入脏数据,无法形成集群
+  rocketmq-proxy:
+    image: apache/rocketmq:5.3.1
+    container_name: rmqproxy
+    ports:
+      - 8081:8081
+      - 8080:8080
+    volumes:
+      - ./config/proxy.json:/etc/proxy.json
+    depends_on:
+      - namesrv
+      - controller
+      - broker
+    command: sh mqproxy -pc /etc/proxy.json
