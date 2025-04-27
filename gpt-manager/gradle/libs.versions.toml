@@ -1,0 +1,20 @@
+[versions]
+spring-boot = '3.4.3'
+mybatis-plus = '3.5.10.1'
+bouncycastle = '1.79'
+hutool='5.8.33'
+[libraries]
+spring-boot-bom = { module = 'org.springframework.boot:spring-boot-dependencies', version.ref = 'spring-boot' }
+mp-generator = { module = 'com.baomidou:mybatis-plus-generator', version.ref = 'mybatis-plus' }
+mp-starter = { module = 'com.baomidou:mybatis-plus-spring-boot3-starter', version.ref = 'mybatis-plus' }
+mp-sqlparser = { module = 'com.baomidou:mybatis-plus-jsqlparser', version.ref = 'mybatis-plus' }
+bcpkix-jdk18on = { module = 'org.bouncycastle:bcpkix-jdk18on', version.ref = 'bouncycastle' }
+bcprov-jdk18on = { module = 'org.bouncycastle:bcprov-jdk18on', version.ref = 'bouncycastle' }
+hutool-all={module='cn,hutool:hutool-all',version.ref='hutool'}
+[bundles]
+mp-runtime = ['mp-starter', 'mp-sqlparser']
+bcp = ['bcpkix-jdk18on', 'bcprov-jdk18on']
+[plugins]
+graalvm = { id = 'org.graalvm.buildtools.native', version = '0.10.5' }
+jib = { id = 'com.google.cloud.tools.jib', version = '3.4.5' }
+

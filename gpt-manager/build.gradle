@@ -1,0 +1,50 @@
+plugins {
+    id 'java'
+    alias(libs.plugins.jib)
+    alias(libs.plugins.graalvm)
+}
+
+group = 'com.cib.gpt.manager'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+configurations {
+    compileOnly {
+        extendsFrom annotationProcessor
+    }
+}
+
+repositories {
+    maven {
+        url = 'https://maven.aliyun.com/repository/public'
+    }
+}
+
+dependencies {
+    implementation platform(libs.spring.boot.bom)
+    testImplementation platform(libs.spring.boot.bom)
+    annotationProcessor platform(libs.spring.boot.bom)
+    testAnnotationProcessor platform(libs.spring.boot.bom)
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    compileOnly 'org.projectlombok:lombok'
+    compileOnly 'org.springframework:spring-webflux'
+    annotationProcessor 'org.projectlombok:lombok'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    implementation libs.bundles.mp.runtime
+    testImplementation libs.mp.generator
+    implementation 'com.mysql:mysql-connector-j'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
+    implementation libs.bundles.bcp
+}
+
+test {
+    useJUnitPlatform()
+}

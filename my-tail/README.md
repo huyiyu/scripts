@@ -24,5 +24,6 @@ More information: <https://manned.org/man/freebsd-13.0/tail.1>.
 + build/native/nativeCompile/tail -n 3 README.md
 
 3. 找到编译好的文件 在 `build/native/nativeCompile/` 目录下 
+
 4. 尝试tail README.md
 ```
