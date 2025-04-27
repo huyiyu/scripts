@@ -24,7 +24,7 @@ subprojects {
     apply plugin: 'io.spring.dependency-management'
     java {
         toolchain {
-            languageVersion = JavaLanguageVersion.of(17)
+            languageVersion = JavaLanguageVersion.of(21)
         }
     }
 
@@ -35,5 +35,4 @@ subprojects {
 
 configure(service){
     apply plugin: 'org.springframework.boot'
-
 }

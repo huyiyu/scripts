@@ -1,0 +1,9 @@
+dependencies {
+    implementation project(':grpc-api')
+    compileOnly "io.grpc:grpc-netty"
+    implementation "io.grpc:grpc-netty-shaded"
+    implementation "io.grpc:grpc-services"
+    implementation "io.grpc:grpc-protobuf"
+    implementation "io.grpc:grpc-inprocess"
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+}

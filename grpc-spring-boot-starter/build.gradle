@@ -1,0 +1,24 @@
+allprojects {
+    group = 'com.huyiyu.grpc'
+    version = '0.0.1-SNAPSHOT'
+    repositories {
+        maven {
+            url 'https://maven.aliyun.com/repository/public'
+        }
+    }
+}
+subprojects {
+    apply plugin: 'java'
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+    dependencies {
+        implementation platform(libs.spring.boot.bom)
+        implementation platform(libs.grpc.bom)
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+
+    }
+}

@@ -1,0 +1,6 @@
+[versions]
+grpc = '1.72.0'
+spring-boot = '3.4.4'
+[libraries]
+grpc-bom = { module = "io.grpc:grpc-bom", version.ref = 'grpc' }
+spring-boot-bom = { module = 'org.springframework.boot:spring-boot-dependencies', version.ref = 'spring-boot' }
