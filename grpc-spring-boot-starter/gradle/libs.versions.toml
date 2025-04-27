@@ -1,6 +1,9 @@
 [versions]
 grpc = '1.72.0'
 spring-boot = '3.4.4'
+devh='3.1.0.RELEASE'
 [libraries]
 grpc-bom = { module = "io.grpc:grpc-bom", version.ref = 'grpc' }
 spring-boot-bom = { module = 'org.springframework.boot:spring-boot-dependencies', version.ref = 'spring-boot' }
+devh-grpc-client-starter={module='net.devh:grpc-client-spring-boot-starter', version.ref='devh'}
+devh-grpc-server-starter={module='net.devh:grpc-server-spring-boot-starter', version.ref='devh'}

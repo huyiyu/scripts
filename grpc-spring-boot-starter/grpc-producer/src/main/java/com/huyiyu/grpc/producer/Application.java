@@ -1,13 +1,11 @@
-package com.huyiyu.grpcclientspringbootstarter;
+package com.huyiyu.grpc.producer;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class GrpcClientSpringBootStarterApplication {
-
+public class Application {
     public static void main(String[] args) {
-        SpringApplication.run(GrpcClientSpringBootStarterApplication.class, args);
+        SpringApplication.run(Application.class, args);
     }
-
 }

@@ -6,4 +6,5 @@ dependencies {
     implementation "io.grpc:grpc-protobuf"
     implementation "io.grpc:grpc-inprocess"
     implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation libs.devh.grpc.client.starter
 }

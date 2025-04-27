@@ -1,4 +1,6 @@
 dependencies {
     implementation project(':grpc-api')
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation libs.devh.grpc.server.starter
 
 }

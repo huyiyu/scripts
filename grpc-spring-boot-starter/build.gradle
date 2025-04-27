@@ -16,6 +16,7 @@ subprojects {
     }
     dependencies {
         implementation platform(libs.spring.boot.bom)
+        annotationProcessor platform(libs.spring.boot.bom)
         implementation platform(libs.grpc.bom)
         compileOnly 'org.projectlombok:lombok'
         annotationProcessor 'org.projectlombok:lombok'
