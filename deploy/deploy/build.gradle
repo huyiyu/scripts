@@ -2,6 +2,7 @@ plugins {
     id 'java'
     alias libs.plugins.native
     alias libs.plugins.git.properties
+    alias libs.plugins.spring.boot
 }
 
 group = 'com.huyiyu'
@@ -16,7 +17,6 @@ java {
 repositories {
     maven {
         url = uri('https://maven.aliyun.com/repository/public')
-        mavenCentral()
     }
 }
 
@@ -31,12 +31,15 @@ dependencies {
     implementation enforcedPlatform(libs.spring.boot.dependency)
     annotationProcessor enforcedPlatform(libs.spring.boot.dependency)
     compileOnly 'org.projectlombok:lombok'
+    compileOnly 'org.slf4j:slf4j-api'
     annotationProcessor 'org.projectlombok:lombok'
     annotationProcessor libs.picocli.codegen
+    annotationProcessor 'org.springframework.boot:spring-boot-configuration-processor'
     implementation libs.picocli.boot
     implementation libs.flyway.mysql
     implementation 'org.springframework:spring-web'
     implementation 'com.mysql:mysql-connector-j'
+    implementation 'org.apache.httpcomponents.client5:httpclient5'
 }
 compileJava {
     options.encoding = 'UTF-8'

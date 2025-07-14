@@ -10,4 +10,4 @@ spring-boot-dependency = { group = 'org.springframework.boot', name = 'spring-bo
 [plugins]
 native = { id = "org.graalvm.buildtools.native", version = "0.10.6" }
 git-properties = { id = 'com.gorylenko.gradle-git-properties', version = '2.4.1' }
-
+spring-boot = { id = 'org.springframework.boot', version = '3.5.3' }

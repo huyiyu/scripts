@@ -28,7 +28,7 @@ public class DeployProperties {
     /**
      * 工作目录
      */
-    private String workdir;
+    private String workdir = System.getProperty("user.dir");
 
   }
 

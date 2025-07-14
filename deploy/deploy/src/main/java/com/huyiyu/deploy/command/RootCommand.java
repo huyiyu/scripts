@@ -15,40 +15,49 @@ import picocli.CommandLine.Option;
 public class RootCommand {
 
   private final FlywayService flywayService;
+
   @Option(names = {"-v", "--version"}, versionHelp = true, description = "版本信息")
   private boolean version;
   @Option(names = {"-h", "--help"}, usageHelp = true, description = "帮助信息")
   private boolean help;
 
   @Command(name = "baseline", description = "数据库基线版本初始化")
-  private int baseline(@Option(names = {"-p",
-      "--password"}, description = "数据库密码", interactive = true, paramLabel = "[PASSWORD]") String password) {
+  private int baseline(
+      @Option(names = {"-h", "--help"}, usageHelp = true, description = "帮助信息") boolean help,
+      @Option(names = {"-p",
+          "--password"}, description = "数据库密码", interactive = true) String password) {
     return flywayService.baseline(password);
   }
 
   @Command(name = "migration", description = "数据库更新")
-  private int migration(@Option(names = {"-p",
-      "--password"}, description = "数据库密码", interactive = true, paramLabel = "[PASSWORD]") String password) {
+  private int migration(
+      @Option(names = {"-h", "--help"}, usageHelp = true, description = "帮助信息") boolean help,
+      @Option(names = {"-p",
+          "--password"}, description = "数据库密码", interactive = true) String password) {
     return flywayService.migration(password);
   }
 
   @Command(name = "repair", description = "清除错误执行记录")
   private int repair(@Option(names = {"-p",
-      "--password"}, description = "数据库密码", interactive = true, paramLabel = "[PASSWORD]") String password) {
+      "--password"}, description = "数据库密码", interactive = true) String password) {
     return flywayService.repair(password);
   }
 
   @Command(name = "rollback", description = "数据库基线版本初始化")
-  private int rollback(@Option(names = {"-p",
-      "--password"}, description = "数据库密码", interactive = true, paramLabel = "[PASSWORD]") String password) {
+  private int rollback(
+      @Option(names = {"-h", "--help"}, usageHelp = true, description = "帮助信息") boolean help,
+      @Option(names = {"-p",
+          "--password"}, description = "数据库密码", interactive = true) String password) {
     return flywayService.rollback(password);
   }
 
   @Command(name = "migration-version", description = "数据库回滚到上个版本")
-  private int migrationVersion(@Option(names = {"-p",
-      "--password"}, description = "数据库密码", interactive = true, paramLabel = "[PASSWORD]") String password,
+  private int migrationVersion(
+      @Option(names = {"-h", "--help"}, usageHelp = true, description = "帮助信息") boolean help,
+      @Option(names = {"-p",
+          "--password"}, description = "数据库密码", interactive = true) String password,
       @Option(names = {"-v",
-          "--version"}, description = "版本号", paramLabel = "[VERSION]") String version
+          "--version"}, description = "版本号", paramLabel = "[VERSION]",required = true) String version
   ) {
     return flywayService.migrationVersion(version, password);
   }

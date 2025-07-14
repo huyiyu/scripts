@@ -12,7 +12,6 @@ import picocli.CommandLine;
 
 @SpringBootApplication
 @RequiredArgsConstructor
-@EnableConfigurationProperties(DeployProperties.class)
 public class DeployApplication implements CommandLineRunner, ExitCodeGenerator {
 
   private final RootCommand rootCommand;
