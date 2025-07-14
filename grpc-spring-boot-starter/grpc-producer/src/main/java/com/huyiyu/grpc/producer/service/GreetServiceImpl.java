@@ -1,8 +1,8 @@
 package com.huyiyu.grpc.producer.service;
 
-import com.huyiyu.grpc.helloworld.GreeterGrpc;
-import com.huyiyu.grpc.helloworld.HelloReply;
-import com.huyiyu.grpc.helloworld.HelloRequest;
+import com.huyiyu.grpc.greeting.GreeterGrpc;
+import com.huyiyu.grpc.greeting.HelloReply;
+import com.huyiyu.grpc.greeting.HelloRequest;
 import io.grpc.stub.StreamObserver;
 import lombok.extern.slf4j.Slf4j;
 import net.devh.boot.grpc.server.service.GrpcService;

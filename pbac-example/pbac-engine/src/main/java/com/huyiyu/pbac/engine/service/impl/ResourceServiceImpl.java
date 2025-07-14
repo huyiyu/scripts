@@ -44,7 +44,7 @@ public class ResourceServiceImpl extends ServiceImpl<ResourceMapper, Resource> i
 
 
   private Optional<PbacResource> getExactlyByPattern(String pattern) {
-    return lambdaQuery()
+    return lambdaQuery(
         .select(Resource::getId, Resource::getPolicyId)
         .eq(Resource::getMatchType, MatchType.EXACTLY.getValue())
         .eq(Resource::getPattern, pattern)

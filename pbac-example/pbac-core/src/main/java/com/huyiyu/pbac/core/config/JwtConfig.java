@@ -10,6 +10,7 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(PbacProperties.class)
 public class JwtConfig {
+
   @Bean
   public JwtService jwtService(PbacProperties pbacProperties) {
     return new NimbusJwtService(pbacProperties.getJwt());

@@ -40,5 +40,11 @@ public class MybatisPlusConfig {
     };
   }
 
+  @Bean
+  public Object object() {
+    MybatisPlusInterceptor interceptor = mybatisPlusInterceptor();
+    return new Object();
+  }
+
 
 }
