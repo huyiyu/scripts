@@ -1,0 +1,58 @@
+plugins {
+    id 'java'
+    alias libs.plugins.native
+    alias libs.plugins.git.properties
+}
+
+group = 'com.huyiyu'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    maven {
+        url = uri('https://maven.aliyun.com/repository/public')
+        mavenCentral()
+    }
+}
+
+gitProperties {
+    keys = ['git.build.version', 'git.commit.user.name', 'git.commit.message.short', 'git.commit.time']
+    dateFormat = 'yyyy-MM-dd HH:mm:ss'
+    dateFormatTimeZone = 'CST'
+}
+
+
+dependencies {
+    implementation enforcedPlatform(libs.spring.boot.dependency)
+    annotationProcessor enforcedPlatform(libs.spring.boot.dependency)
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    annotationProcessor libs.picocli.codegen
+    implementation libs.picocli.boot
+    implementation libs.flyway.mysql
+    implementation 'org.springframework:spring-web'
+    implementation 'com.mysql:mysql-connector-j'
+}
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-parameters', "-Aproject=${project.group}/${project.name}"]
+}
+
+
+jar {
+    exclude 'src/main/resources/db', 'src/main/resources/chart', 'src/main/resources/application.properties'
+}
+
+graalvmNative {
+    binaries {
+        main {
+            sharedLibrary = false
+            mainClass = 'com.huyiyu.deploy.DeployApplication'
+        }
+    }
+}
