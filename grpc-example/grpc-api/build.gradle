@@ -36,5 +36,4 @@ dependencies {
     compileOnly('io.grpc:grpc-protobuf') {
         exclude module: 'proto-google-common-protos'
     }
-
 }

@@ -1,1 +1,10 @@
-
+dependencies {
+    implementation platform(libs.grpc.bom)
+    implementation platform(libs.protobuf.parent)
+    implementation project(':grpc-api')
+    implementation 'io.grpc:grpc-stub'
+    implementation 'io.grpc:grpc-alts'
+    implementation 'io.grpc:grpc-util'
+    implementation 'io.grpc:grpc-services'
+    implementation 'com.google.protobuf:protobuf-java'
+}
