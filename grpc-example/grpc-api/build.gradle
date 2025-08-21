@@ -1,0 +1,40 @@
+plugins {
+    id 'java'
+    alias libs.plugins.protobuf
+}
+
+protobuf {
+    protoc {
+        artifact = libs.protoc.simple.get()
+    }
+    plugins {
+        grpc {
+            artifact = libs.protoc.grpc.simple.get()
+        }
+        reactor {
+            artifact = libs.grpc.reactor.get()
+        }
+    }
+    generateProtoTasks {
+        ofSourceSet("main")*.plugins {
+            grpc {
+            }
+            reactor {
+                option '@generated=omit'
+            }
+        }
+    }
+}
+
+dependencies {
+    compileOnly platform(libs.grpc.bom)
+    compileOnly platform(libs.protobuf.parent)
+    compileOnly platform(libs.spring.boot.bom)
+    compileOnly libs.grpc.stub.reactor
+    compileOnly 'io.grpc:grpc-stub'
+    compileOnly 'io.projectreactor:reactor-core'
+    compileOnly('io.grpc:grpc-protobuf') {
+        exclude module: 'proto-google-common-protos'
+    }
+
+}

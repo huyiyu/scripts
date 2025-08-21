@@ -1,5 +1,0 @@
-dependencies {
-    implementation project(':grpc-api')
-    implementation 'org.springframework.boot:spring-boot-starter-web'
-    implementation libs.devh.grpc.client.starter
-}

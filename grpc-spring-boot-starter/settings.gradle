@@ -1,7 +1,0 @@
-rootProject.name = 'grpc-spring-boot-starter'
-include ':grpc-api'
-include ':grpc-producer'
-include ':grpc-consumer'
-include ':grpc-client-spring-boot-starter'
-include ':grpc-server-spring-boot-starter'
-

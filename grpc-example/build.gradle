@@ -1,0 +1,24 @@
+
+
+allprojects {
+    apply plugin: 'java'
+    group = 'io.grpc.example'
+    repositories {
+        maven {
+            url 'https://maven.aliyun.com/repository/public'
+        }
+    }
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+
+    dependencies {
+
+    }
+}
+
+
+
+
