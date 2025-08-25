@@ -1,10 +1,19 @@
 dependencies {
     implementation platform(libs.grpc.bom)
+    implementation platform(libs.spring.boot.bom)
+    annotationProcessor platform(libs.spring.boot.bom)
     implementation platform(libs.protobuf.parent)
     implementation project(':grpc-api')
     implementation 'io.grpc:grpc-stub'
     implementation 'io.grpc:grpc-alts'
     implementation 'io.grpc:grpc-util'
     implementation 'io.grpc:grpc-services'
+    implementation 'io.grpc:grpc-netty'
+    implementation 'io.grpc:grpc-xds'
     implementation 'com.google.protobuf:protobuf-java'
+    implementation 'ch.qos.logback:logback-classic'
+    implementation 'ch.qos.logback:logback-core'
+    implementation libs.jwt
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
 }

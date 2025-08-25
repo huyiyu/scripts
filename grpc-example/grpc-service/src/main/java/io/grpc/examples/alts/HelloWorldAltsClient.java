@@ -3,9 +3,11 @@ package io.grpc.examples.alts;
 import io.grpc.alts.AltsChannelCredentials;
 import io.grpc.Grpc;
 import io.grpc.ManagedChannel;
-import io.grpc.examples.api.GreeterGrpc;
-import io.grpc.examples.api.HelloReply;
-import io.grpc.examples.api.HelloRequest;
+import io.grpc.examples.helloworld.GreeterGrpc;
+import io.grpc.examples.helloworld.HelloReply;
+import io.grpc.examples.helloworld.HelloRequest;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -16,9 +18,9 @@ import java.util.logging.Logger;
  * An example gRPC client that uses ALTS. Shows how to do a   Unary RPC. This example can only be run
  * on Google Cloud Platform.
  */
+@Slf4j
 public final class HelloWorldAltsClient {
 
-    private static final Logger logger = Logger.getLogger(HelloWorldAltsClient.class.getName());
     private String serverAddress = "localhost:10001";
 
     public static void main(String[] args) throws InterruptedException {
@@ -74,7 +76,7 @@ public final class HelloWorldAltsClient {
             GreeterGrpc.GreeterBlockingStub stub = GreeterGrpc.newBlockingStub(channel);
             HelloReply resp = stub.sayHello(HelloRequest.newBuilder().setName("Waldo").build());
 
-            logger.log(Level.INFO, "Got {0}", resp);
+            log.info("Got {}", resp);
         } finally {
             channel.shutdown();
             channel.awaitTermination(1, TimeUnit.SECONDS);

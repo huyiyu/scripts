@@ -3,17 +3,18 @@ package io.grpc.examples.debug;
 import io.grpc.Grpc;
 import io.grpc.InsecureServerCredentials;
 import io.grpc.Server;
-import io.grpc.ServerBuilder;
-import io.grpc.health.v1.HealthCheckResponse.ServingStatus;
+import io.grpc.protobuf.services.ProtoReflectionService;
 import io.grpc.protobuf.services.ProtoReflectionServiceV1;
 import io.grpc.services.AdminInterface;
-import io.grpc.services.HealthStatusManager;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 /**
  * A server that hosts HostnameGreeter, plus the channelz service which grpcdebug uses.
  */
+@Slf4j
 public final class HostnameDebuggableServer {
     static int port = 50051;
     static String hostname = null;
@@ -22,10 +23,11 @@ public final class HostnameDebuggableServer {
         parseArgs(args); // sets port and hostname
 
         final Server server = Grpc.newServerBuilderForPort(port, InsecureServerCredentials.create())
-            .addService(new HostnameGreeter(hostname))
-            .addServices(AdminInterface.getStandardServices()) // the key add for enabling grpcdebug
-            .build()
-            .start();
+                .addService(new HostnameGreeter(hostname))
+                .addServices(AdminInterface.getStandardServices()) // the key add for enabling grpcdebug
+                .addService(ProtoReflectionServiceV1.newInstance())
+                .build()
+                .start();
 
         System.out.println("Listening on port " + port);
 

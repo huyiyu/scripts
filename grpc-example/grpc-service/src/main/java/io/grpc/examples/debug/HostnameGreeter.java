@@ -1,19 +1,19 @@
 package io.grpc.examples.debug;
 
-import io.grpc.examples.api.GreeterGrpc;
-import io.grpc.examples.api.HelloReply;
-import io.grpc.examples.api.HelloRequest;
+import io.grpc.examples.helloworld.GreeterGrpc;
+import io.grpc.examples.helloworld.HelloReply;
+import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.stub.StreamObserver;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.net.InetAddress;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
-/** Greeter implementation which replies identifying itself with its hostname. */
+@Slf4j
 public final class HostnameGreeter extends GreeterGrpc.GreeterImplBase {
-    private static final Logger logger = Logger.getLogger(HostnameGreeter.class.getName());
+
 
     private AtomicInteger callCount = new AtomicInteger();
 
@@ -49,7 +49,7 @@ public final class HostnameGreeter extends GreeterGrpc.GreeterImplBase {
         try {
             return InetAddress.getLocalHost().getHostName();
         } catch (IOException ex) {
-            logger.log(Level.INFO, "Failed to determine hostname. Will generate one", ex);
+            log.error( "Failed to determine hostname. Will generate one", ex);
         }
         // Strange. Well, let's make an identifier for ourselves.
         return "generated-" + new Random().nextInt();

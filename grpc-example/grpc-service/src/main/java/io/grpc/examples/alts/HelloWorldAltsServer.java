@@ -19,10 +19,12 @@ package io.grpc.examples.alts;
 import io.grpc.alts.AltsServerCredentials;
 import io.grpc.Grpc;
 import io.grpc.Server;
-import io.grpc.examples.api.GreeterGrpc.GreeterImplBase;
-import io.grpc.examples.api.HelloReply;
-import io.grpc.examples.api.HelloRequest;
+import io.grpc.examples.helloworld.GreeterGrpc.GreeterImplBase;
+import io.grpc.examples.helloworld.HelloReply;
+import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.stub.StreamObserver;
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.IOException;
 import java.util.concurrent.Executors;
 import java.util.logging.Level;
@@ -32,8 +34,8 @@ import java.util.logging.Logger;
  * An example gRPC server that uses ALTS. Shows how to do a Unary RPC. This example can only be run
  * on Google Cloud Platform.
  */
+@Slf4j
 public final class HelloWorldAltsServer extends GreeterImplBase {
-    private static final Logger logger = Logger.getLogger(HelloWorldAltsServer.class.getName());
     private Server server;
     private int port = 10001;
 
@@ -88,7 +90,7 @@ public final class HelloWorldAltsServer extends GreeterImplBase {
                 .executor(Executors.newFixedThreadPool(1))
                 .build();
         server.start();
-        logger.log(Level.INFO, "Started on {0}", port);
+        log.info("Started on {}", port);
         server.awaitTermination();
     }
 

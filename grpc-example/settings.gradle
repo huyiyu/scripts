@@ -1,4 +1,5 @@
 rootProject.name = 'grpc-example'
 include 'grpc-api'
 include 'grpc-service'
+include 'grpc-servlet'
 

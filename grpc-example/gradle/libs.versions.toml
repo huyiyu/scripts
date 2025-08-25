@@ -6,7 +6,7 @@ protobuf = '4.31.1'
 spring-boot = '3.5.4'
 proto-google-common = '2.61.0'
 reactor-core = '3.7.8'
-
+nimbusds = '10.4.2'
 [libraries]
 grpc-bom = { module = 'io.grpc:grpc-bom', version.ref = 'grpc' }
 protobuf-parent = { module = 'com.google.protobuf:protobuf-parent', version.ref = 'protobuf' }
@@ -17,5 +17,6 @@ grpc-reactor = { module = 'com.salesforce.servicelibs:reactor-grpc', version.ref
 grpc-stub-reactor = { module = 'com.salesforce.servicelibs:reactor-grpc-stub', version.ref = 'reactor-grpc' }
 spring-boot-bom = { module = 'org.springframework.boot:spring-boot-dependencies', version.ref = 'spring-boot' }
 reactor-core = { module = 'io.projectreactor:reactor-core', version.ref = 'reactor-core' }
+jwt = { module = 'com.nimbusds:nimbus-jose-jwt', version.ref = 'nimbusds' }
 [plugins]
 protobuf = { id = 'com.google.protobuf', version.ref = 'protobuf-plugin' }

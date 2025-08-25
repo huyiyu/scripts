@@ -23,14 +23,13 @@ import io.grpc.InsecureServerCredentials;
 import io.grpc.ManagedChannel;
 import io.grpc.Server;
 import io.grpc.StatusRuntimeException;
-import io.grpc.examples.api.GreeterGrpc;
-import io.grpc.examples.api.HelloReply;
-import io.grpc.examples.api.HelloRequest;
-import io.grpc.protobuf.services.ProtoReflectionServiceV1;
+import io.grpc.examples.helloworld.GreeterGrpc;
+import io.grpc.examples.helloworld.HelloReply;
+import io.grpc.examples.helloworld.HelloRequest;
 import io.grpc.services.AdminInterface;
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * A client that creates a channelz service and then requests a greeting 50 times.
@@ -38,9 +37,9 @@ import java.util.logging.Logger;
  * one of which has only 1 stub.  The requests are split over the 3 channels.
  * Once completed, there is a 30 second sleep to allow more time to run the commandline debugger.
  */
+@Slf4j
 public class HelloWorldDebuggableClient {
 
-    private static final Logger logger = Logger.getLogger(HelloWorldDebuggableClient.class.getName());
     public static final int NUM_ITERATIONS = 50;
 
     private final GreeterGrpc.GreeterBlockingStub blockingStub;
@@ -52,16 +51,16 @@ public class HelloWorldDebuggableClient {
 
     /** Say hello to server. */
     public void greet(String name) {
-        logger.info("Will try to greet " + name + " ...");
+        log.info("Will try to greet {} ...", name);
         HelloRequest request = HelloRequest.newBuilder().setName(name).build();
         HelloReply response;
         try {
             response = blockingStub.sayHello(request);
         } catch (StatusRuntimeException e) {
-            logger.log(Level.WARNING, "RPC failed: {0}", e.getStatus());
+            log.warn("RPC failed: {}", e.getStatus());
             return;
         }
-        logger.info("Greeting: " + response.getMessage());
+        log.info("Greeting: {}", response.getMessage());
     }
 
     /**
@@ -121,7 +120,7 @@ public class HelloWorldDebuggableClient {
                         break;
                 }
             }
-            System.out.println("Completed " + NUM_ITERATIONS +
+            log.info("Completed " + NUM_ITERATIONS +
                 " requests, will now sleep for 30 seconds to give some time for command line calls");
             Thread.sleep(30000); // Give some time for running grpcdebug
         } finally {

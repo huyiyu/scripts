@@ -12,6 +12,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.ReactiveAuthenticationManager;
 import org.springframework.security.config.web.server.ServerHttpSecurity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.AuthenticationException;
@@ -33,7 +34,9 @@ public class SecurityConfig {
     return http.oauth2ResourceServer(oAuth2ResourceServerSpec ->
             oAuth2ResourceServerSpec
                 .bearerTokenConverter(serverWebExchange->bareTokenConvert(serverWebExchange,pbacProperties))
-                .jwt(jwtSpec -> jwtSpec.jwtDecoder(token -> Mono.just(jwtService.decode(token))))
+                .jwt(jwtSpec -> jwtSpec
+                        .authenticationManager()
+                        .jwtDecoder(token -> Mono.just(jwtService.decode(token))))
         ).csrf(csrf -> csrf.disable())
         .logout(logout -> logout.disable())
         .cors(cors -> cors.disable())
@@ -50,10 +53,12 @@ public class SecurityConfig {
         .build();
   }
 
+
   private Mono<Authentication> bareTokenConvert(ServerWebExchange serverWebExchange,
       PbacProperties pbacProperties) {
     String value = serverWebExchange.getRequest().getPath().value();
-    if (Arrays.stream(pbacProperties.getPermitAllPattern()).anyMatch(str -> str.equals(value))) {
+    if (Arrays.stream(pbacProperties.getPermitAllPattern())
+            .anyMatch(str -> str.equals(value))) {
       return Mono.empty();
     }
     String first = serverWebExchange

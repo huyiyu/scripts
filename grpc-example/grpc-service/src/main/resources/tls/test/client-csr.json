@@ -1,0 +1,16 @@
+{
+  "CN": "client-grpc-java",
+  "key": {
+    "algo": "rsa",
+    "size": 2048
+  },
+  "names": [
+    {
+      "C": "US",
+      "ST": "California",
+      "L": "San Francisco",
+      "O": "My Company",
+      "OU": "Client Services"
+    }
+  ]
+}
