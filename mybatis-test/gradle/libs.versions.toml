@@ -1,0 +1,20 @@
+[versions]
+flyway-mysql = '11.10.0'
+picocli = '4.7.7'
+spring-boot = '3.5.3'
+commons-compress = '1.27.1'
+gson = '2.13.1'
+diffutils = '4.12'
+[libraries]
+flyway-mysql = { group = 'org.flywaydb', name = 'flyway-mysql', version.ref = 'flyway-mysql' }
+picocli-boot = { group = 'info.picocli', name = 'picocli-spring-boot-starter', version.ref = 'picocli' }
+picocli-codegen = { group = 'info.picocli', name = 'picocli-codegen', version.ref = 'picocli' }
+spring-boot-dependency = { group = 'org.springframework.boot', name = 'spring-boot-dependencies', version.ref = 'spring-boot' }
+commons-compress = { group = 'org.apache.commons', name = 'commons-compress', version.ref = 'commons-compress' }
+gson = { group = 'com.google.code.gson', name = 'gson', version.ref = 'gson' }
+diffutils = { group = 'io.github.java-diff-utils', name = 'java-diff-utils', version.ref = 'diffutils' }
+[plugins]
+native = { id = "org.graalvm.buildtools.native", version = "0.10.6" }
+git-properties = { id = 'com.gorylenko.gradle-git-properties', version = '2.4.1' }
+
+spring-boot = { id = 'org.springframework.boot', version = '3.5.3' }

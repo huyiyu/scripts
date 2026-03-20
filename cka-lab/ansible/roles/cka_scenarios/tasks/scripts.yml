@@ -1,0 +1,40 @@
+---
+# 部署 CKA 考试辅助脚本到目标环境
+
+- name: 创建脚本目录
+  file:
+    path: /root/cka-exam
+    state: directory
+    mode: '0755'
+
+- name: 复制评分脚本
+  copy:
+    src: "{{ role_path }}/../../../scripts/cka-exam/check_cka.sh"
+    dest: /root/check_cka.sh
+    mode: '0755'
+
+- name: 复制 etcd 故障初始化脚本
+  copy:
+    src: "{{ role_path }}/../../../scripts/cka-exam/etcd-set.sh"
+    dest: /root/etcd-set.sh
+    mode: '0755'
+
+- name: 复制 NetworkPolicy 资源文件
+  copy:
+    src: "{{ role_path }}/../../../scripts/cka-exam/10-network.yaml"
+    dest: /root/10-network.yaml
+    mode: '0644'
+
+- name: 复制脚本说明文档
+  copy:
+    src: "{{ role_path }}/../../../scripts/cka-exam/README.md"
+    dest: /root/cka-exam/README.md
+    mode: '0644'
+
+# 创建软链接方便使用
+- name: 创建评分脚本软链接
+  file:
+    src: /root/check_cka.sh
+    dest: /usr/local/bin/check-cka
+    state: link
+    force: yes

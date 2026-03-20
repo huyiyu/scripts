@@ -1,0 +1,15 @@
+dependencies {
+    annotationProcessor platform(libs.spring.boot.bom)
+    implementation platform(libs.spring.boot.bom)
+    implementation platform(libs.grpc.bom)
+    implementation platform(libs.protobuf.parent)
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation project(':grpc-api')
+    implementation 'com.google.protobuf:protobuf-java'
+    implementation 'io.grpc:grpc-core'
+    implementation 'io.grpc:grpc-stub'
+    implementation 'io.grpc:grpc-protobuf'
+    implementation 'io.grpc:grpc-services'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+}

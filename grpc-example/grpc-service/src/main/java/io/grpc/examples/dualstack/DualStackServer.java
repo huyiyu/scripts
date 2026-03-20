@@ -16,6 +16,7 @@
 
 package io.grpc.examples.dualstack;
 
+import io.grpc.Grpc;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.examples.helloworld.GreeterGrpc;

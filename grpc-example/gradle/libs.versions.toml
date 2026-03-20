@@ -1,12 +1,12 @@
 [versions]
 protobuf-plugin = '0.9.5'
-grpc = '1.74.0'
+grpc = '1.75.0'
 reactor-grpc = '1.2.4'
 protobuf = '4.31.1'
-spring-boot = '3.5.4'
+spring-boot = '3.5.5'
 proto-google-common = '2.61.0'
-reactor-core = '3.7.8'
 nimbusds = '10.4.2'
+bouncycastle = '1.81'
 [libraries]
 grpc-bom = { module = 'io.grpc:grpc-bom', version.ref = 'grpc' }
 protobuf-parent = { module = 'com.google.protobuf:protobuf-parent', version.ref = 'protobuf' }
@@ -16,7 +16,8 @@ protoc-grpc-simple = { module = 'io.grpc:protoc-gen-grpc-java', version.ref = 'g
 grpc-reactor = { module = 'com.salesforce.servicelibs:reactor-grpc', version.ref = 'reactor-grpc' }
 grpc-stub-reactor = { module = 'com.salesforce.servicelibs:reactor-grpc-stub', version.ref = 'reactor-grpc' }
 spring-boot-bom = { module = 'org.springframework.boot:spring-boot-dependencies', version.ref = 'spring-boot' }
-reactor-core = { module = 'io.projectreactor:reactor-core', version.ref = 'reactor-core' }
 jwt = { module = 'com.nimbusds:nimbus-jose-jwt', version.ref = 'nimbusds' }
+bcprov = { module = 'org.bouncycastle:bcprov-jdk18on', version.ref = 'bouncycastle' }
+bcpkix = { module = 'org.bouncycastle:bcpkix-jdk18on', version.ref = 'bouncycastle' }
 [plugins]
 protobuf = { id = 'com.google.protobuf', version.ref = 'protobuf-plugin' }

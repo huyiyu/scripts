@@ -1,0 +1,38 @@
+plugins {
+    id 'java'
+}
+
+group = 'org.mybatis.test'
+version = '0.0.1-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+    }
+}
+
+repositories {
+    maven {
+        url = uri('https://maven.aliyun.com/repository/public')
+    }
+}
+
+
+
+
+dependencies {
+    implementation enforcedPlatform(libs.spring.boot.dependency)
+    annotationProcessor enforcedPlatform(libs.spring.boot.dependency)
+    compileOnly 'org.projectlombok:lombok'
+    compileOnly 'org.slf4j:slf4j-api'
+    annotationProcessor 'org.projectlombok:lombok'
+    implementation 'org.mybatis.spring.boot:mybatis-spring-boot-starter:3.0.5'
+    implementation 'com.h2database:h2:2.4.240'
+
+
+}
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs += ['-parameters']
+}
+

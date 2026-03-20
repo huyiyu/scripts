@@ -1,3 +1,0 @@
-[submodule "blog/themes/whisper"]
-	path = blog/themes/whisper
-	url = https://github.com/zerostaticthemes/hugo-whisper-theme.git

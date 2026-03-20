@@ -6,6 +6,7 @@ plugins {
 protobuf {
     protoc {
         artifact = libs.protoc.simple.get()
+
     }
     plugins {
         grpc {

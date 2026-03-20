@@ -1,0 +1,9 @@
+---
+# 仅部署 CKA 2026 考试题目场景（cka202602.md 中的 16 道题目）
+# 用于在已有集群上创建/重置考试题目
+
+- name: "CKA 2026 - 部署考试题目场景"
+  hosts: controlplane
+  become: yes
+  roles:
+    - cka_scenarios

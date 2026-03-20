@@ -22,10 +22,8 @@ import io.grpc.examples.helloworld.HelloReply;
 import io.grpc.examples.helloworld.HelloRequest;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
 import java.io.InputStream;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**

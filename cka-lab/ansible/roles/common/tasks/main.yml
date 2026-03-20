@@ -1,0 +1,77 @@
+---
+# 基础环境配置 - 所有节点
+
+- name: 更新 apt 缓存
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: 安装基础工具
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - lsb-release
+      - software-properties-common
+      - vim
+      - wget
+      - net-tools
+      - jq
+      - bash-completion
+      - conntrack
+      - ipset
+      - ipvsadm
+    state: present
+
+- name: 禁用 SWAP (Kubernetes 要求)
+  shell: |
+    swapoff -a
+    sed -i '/ swap / s/^.*/#&/' /etc/fstab
+  args:
+    executable: /bin/bash
+
+- name: 加载内核模块
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: 配置 sysctl 参数
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+  loop:
+    - { key: "net.bridge.bridge-nf-call-iptables", value: "1" }
+    - { key: "net.bridge.bridge-nf-call-ip6tables", value: "1" }
+    - { key: "net.ipv4.ip_forward", value: "1" }
+    - { key: "net.ipv6.conf.all.forwarding", value: "1" }
+    - { key: "net.netfilter.nf_conntrack_max", value: "131072" }
+
+- name: 确保内核模块持久化
+  lineinfile:
+    path: /etc/modules-load.d/k8s.conf
+    line: "{{ item }}"
+    create: yes
+  loop:
+    - overlay
+    - br_netfilter
+
+- name: 配置 hosts 文件
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item.ip }} {{ item.hostname }}"
+    state: present
+  loop:
+    - { ip: "192.168.56.10", hostname: "controlplane" }
+    - { ip: "192.168.56.11", hostname: "node01" }
+    - { ip: "192.168.56.12", hostname: "node02" }
+
+- name: 设置主机名
+  hostname:
+    name: "{{ ansible_hostname }}"

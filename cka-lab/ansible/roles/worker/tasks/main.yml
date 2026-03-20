@@ -1,0 +1,28 @@
+---
+# Worker 节点加入集群
+
+- name: 检查是否已在集群中
+  stat:
+    path: /etc/kubernetes/kubelet.conf
+  register: kubelet_conf
+
+- name: 从 Control Plane 获取 join 命令
+  shell: |
+    ssh -o StrictHostKeyChecking=no {{ hostvars[groups['controlplane'][0]]['ansible_user'] }}@{{ groups['controlplane'][0] }} 'sudo kubeadm token create --print-join-command'
+  register: join_cmd
+  delegate_to: localhost
+  become: no
+  when: not kubelet_conf.stat.exists
+  ignore_errors: yes
+
+- name: 使用本地保存的 join 命令
+  shell: cat /tmp/kubeadm-join-command.sh
+  register: local_join_cmd
+  delegate_to: localhost
+  become: no
+  when: join_cmd is failed or not kubelet_conf.stat.exists
+  ignore_errors: yes
+
+- name: 加入 Kubernetes 集群
+  shell: "{{ join_cmd.stdout if join_cmd is succeeded else local_join_cmd.stdout }}"
+  when: not kubelet_conf.stat.exists
