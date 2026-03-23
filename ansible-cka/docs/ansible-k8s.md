@@ -1,48 +1,50 @@
-# 使用 Ansible 搭建 Kubernetes 1.35 集群
+# 使用 Ansible 搭建 Kubernetes 1.35 单节点集群
 
-本文档介绍如何使用 Ansible 在 Ubuntu 24.04 上自动化部署 Kubernetes 1.35 集群。
+本文档介绍如何使用 Ansible 在 Ubuntu 24.04 上自动化部署三个独立的 Kubernetes 1.35 单节点集群。
 
 参考文档：https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/
 
 ## 架构概述
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                           Kubernetes 1.35 集群                           │
-├─────────────────────────────────┬───────────────────────────────────────┤
-│      Control Plane Node         │           Worker Nodes                │
-│    (k8s-master01, 192.168.1.10) │   (k8s-worker01~03, 192.168.1.11-13)  │
-├─────────────────────────────────┼───────────────────────────────────────┤
-│  • kube-apiserver               │   • kubelet                           │
-│  • kube-controller-manager      │   • kube-proxy                        │
-│  • kube-scheduler               │   • containerd (CRI)                  │
-│  • etcd                         │                                       │
-│  • kubelet                      │                                       │
-│  • containerd (CRI)             │                                       │
-│  • Calico CNI                   │   • Calico CNI                        │
-└─────────────────────────────────┴───────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                       三个独立 Kubernetes 1.35 集群                           │
+├─────────────────────────────┬─────────────────────────────┬─────────────────┤
+│       Cluster 1             │        Cluster 2            │    Cluster 3    │
+│   (k8s-node01, 192.168.1.10)│  (k8s-node02, 192.168.1.11) │(k8s-node03,192.168.1.12)│
+├─────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ • kube-apiserver            │ • kube-apiserver            │ • kube-apiserver│
+│ • kube-controller-manager   │ • kube-controller-manager   │ • kube-controller-manager│
+│ • kube-scheduler            │ • kube-scheduler            │ • kube-scheduler│
+│ • etcd                      │ • etcd                      │ • etcd          │
+│ • kubelet                   │ • kubelet                   │ • kubelet       │
+│ • containerd (CRI)          │ • containerd (CRI)          │ • containerd (CRI)│
+│ • Calico CNI                │ • Calico CNI                │ • Calico CNI    │
+│ • 可调度工作负载             │ • 可调度工作负载             │ • 可调度工作负载 │
+└─────────────────────────────┴─────────────────────────────┴─────────────────┘
 ```
 
 ## 环境要求
 
 ### 服务器配置
 
-| 角色 | 数量 | CPU | 内存 | 磁盘 | OS |
-|------|------|-----|------|------|-----|
-| Control Plane | 1+ | 2核+ | 4GB+ | 20GB+ | Ubuntu 24.04 LTS |
-| Worker | 1+ | 2核+ | 4GB+ | 20GB+ | Ubuntu 24.04 LTS |
+| 集群 | 节点 | IP地址 | CPU | 内存 | 磁盘 | OS |
+|------|------|--------|-----|------|------|-----|
+| Cluster 1 | k8s-node01 | 192.168.1.10 | 2核+ | 4GB+ | 20GB+ | Ubuntu 24.04 LTS |
+| Cluster 2 | k8s-node02 | 192.168.1.11 | 2核+ | 4GB+ | 20GB+ | Ubuntu 24.04 LTS |
+| Cluster 3 | k8s-node03 | 192.168.1.12 | 2核+ | 4GB+ | 20GB+ | Ubuntu 24.04 LTS |
 
 ### 网络要求
 
-| 协议 | 端口 | 源 | 用途 |
-|------|------|-----|------|
-| TCP | 6443 | All | Kubernetes API Server |
-| TCP | 2379-2380 | Control Plane | etcd server client API |
-| TCP | 10250 | All | Kubelet API |
-| TCP | 10259 | Control Plane | kube-scheduler |
-| TCP | 10257 | Control Plane | kube-controller-manager |
-| UDP | 8472 | All | VXLAN (Calico/Flannel) |
-| TCP | 179 | All | BGP (Calico) |
+| 协议 | 端口 | 用途 |
+|------|------|------|
+| TCP | 6443 | Kubernetes API Server |
+| TCP | 10250 | Kubelet API |
+| TCP | 2379-2380 | etcd server client API |
+| TCP | 10259 | kube-scheduler |
+| TCP | 10257 | kube-controller-manager |
+| UDP | 8472 | VXLAN (Calico) |
+| TCP | 179 | BGP (Calico) |
 
 ## 项目结构
 
@@ -54,26 +56,16 @@ k8s-ansible/
 ├── group_vars/
 │   └── all.yml
 ├── roles/
-│   ├── common/
-│   │   ├── tasks/
-│   │   │   └── main.yml
-│   │   └── handlers/
-│   │       └── main.yml
-│   ├── containerd/
-│   │   ├── tasks/
-│   │   │   └── main.yml
-│   │   └── templates/
-│   │       └── containerd.service.j2
-│   ├── k8s-packages/
-│   │   └── tasks/
-│   │       └── main.yml
-│   ├── master/
-│   │   ├── tasks/
-│   │   │   └── main.yml
-│   │   └── templates/
-│   │       └── kubeadm-config.yaml.j2
-│   └── worker/
-│       └── tasks/
+│   └── kubernetes/
+│       ├── tasks/
+│       │   ├── main.yml
+│       │   ├── 01-system-prep.yml
+│       │   ├── 02-containerd.yml
+│       │   ├── 03-k8s-packages.yml
+│       │   └── 04-cluster-init.yml
+│       ├── templates/
+│       │   └── kubeadm-config.yaml.j2
+│       └── handlers/
 │           └── main.yml
 ├── playbooks/
 │   └── site.yml
@@ -115,19 +107,30 @@ control_path = /tmp/ansible-ssh-%%h-%%p-%%r
 **`inventory/hosts.ini`**
 
 ```ini
-[masters]
-k8s-master01 ansible_host=192.168.1.10
+[cluster1]
+k8s-node01 ansible_host=192.168.1.10
 
-[workers]
-k8s-worker01 ansible_host=192.168.1.11
-k8s-worker02 ansible_host=192.168.1.12
-k8s-worker03 ansible_host=192.168.1.13
+[cluster2]
+k8s-node02 ansible_host=192.168.1.11
 
-[k8s:children]
-masters
-workers
+[cluster3]
+k8s-node03 ansible_host=192.168.1.12
 
-[k8s:vars]
+[all:children]
+cluster1
+cluster2
+cluster3
+
+[cluster1:vars]
+cni_enabled=true
+
+[cluster2:vars]
+cni_enabled=false
+
+[cluster3:vars]
+cni_enabled=true
+
+[all:vars]
 ansible_user=ubuntu
 ansible_ssh_private_key_file=~/.ssh/id_rsa
 ansible_python_interpreter=/usr/bin/python3
@@ -143,12 +146,11 @@ ansible_python_interpreter=/usr/bin/python3
 k8s_version: "1.35"
 
 # 集群配置
-cluster_name: "k8s-cluster"
-control_plane_endpoint: "192.168.1.10:6443"
 pod_network_cidr: "10.244.0.0/16"
 service_cidr: "10.96.0.0/12"
 
 # CNI 配置
+cni_enabled: true
 cni_provider: "calico"
 calico_version: "v3.28.0"
 
@@ -161,19 +163,39 @@ cni_plugins_version: "1.5.1"
 network_interface: "eth0"
 ```
 
-### 4. Common 角色 - 系统准备
+### 4. Kubernetes 角色
 
-**`roles/common/tasks/main.yml`**
+**`roles/kubernetes/tasks/main.yml`**
+
+```yaml
+---
+# Kubernetes 单节点集群部署主入口
+
+- name: 导入系统准备任务
+  import_tasks: 01-system-prep.yml
+
+- name: 导入 Containerd 安装任务
+  import_tasks: 02-containerd.yml
+
+- name: 导入 Kubernetes 包安装任务
+  import_tasks: 03-k8s-packages.yml
+
+- name: 导入集群初始化任务
+  import_tasks: 04-cluster-init.yml
+```
+
+**`roles/kubernetes/tasks/01-system-prep.yml`**
 
 ```yaml
 ---
 # 系统基础配置
-- name: Update apt cache
+
+- name: 更新 apt 缓存
   apt:
     update_cache: yes
     cache_valid_time: 3600
 
-- name: Install required packages
+- name: 安装必要的基础软件包
   apt:
     name:
       - apt-transport-https
@@ -192,7 +214,7 @@ network_interface: "eth0"
     state: present
 
 # 配置系统参数
-- name: Load kernel modules for Kubernetes
+- name: 加载 Kubernetes 所需的内核模块
   modprobe:
     name: "{{ item }}"
     state: present
@@ -200,7 +222,7 @@ network_interface: "eth0"
     - overlay
     - br_netfilter
 
-- name: Ensure kernel modules persist
+- name: 确保内核模块持久化配置
   lineinfile:
     path: /etc/modules-load.d/k8s.conf
     line: "{{ item }}"
@@ -210,7 +232,7 @@ network_interface: "eth0"
     - br_netfilter
 
 # 配置 sysctl 参数
-- name: Configure sysctl for Kubernetes
+- name: 配置 Kubernetes 所需的 sysctl 参数
   sysctl:
     name: "{{ item.key }}"
     value: "{{ item.value }}"
@@ -225,23 +247,23 @@ network_interface: "eth0"
     - { key: "vm.swappiness", value: "0" }
 
 # 禁用 Swap
-- name: Disable swap immediately
+- name: 立即禁用 swap
   command: swapoff -a
   changed_when: true
 
-- name: Remove swap from /etc/fstab
+- name: 从 /etc/fstab 中移除 swap 配置
   replace:
     path: /etc/fstab
     regexp: '^([^#].*?\s+swap\s+.*)$'
     replace: '# \1'
 
 # 配置时区
-- name: Set timezone to Asia/Shanghai
+- name: 设置时区为 Asia/Shanghai
   timezone:
     name: Asia/Shanghai
 
 # 禁用防火墙（生产环境请谨慎）
-- name: Disable UFW
+- name: 禁用 UFW 防火墙
   systemd:
     name: ufw
     state: stopped
@@ -249,38 +271,28 @@ network_interface: "eth0"
   ignore_errors: yes
 
 # 配置 hosts 文件
-- name: Add hosts entries
+- name: 添加 hosts 条目
   lineinfile:
     path: /etc/hosts
     line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
     state: present
-  loop: "{{ groups['k8s'] }}"
+  loop: "{{ groups['all'] }}"
 ```
 
-**`roles/common/handlers/main.yml`**
+**`roles/kubernetes/tasks/02-containerd.yml`**
 
 ```yaml
 ---
-- name: Reload sysctl
-  command: sysctl --system
-```
+# 安装和配置 Containerd 容器运行时
 
-### 5. Containerd 角色 - 容器运行时
-
-**`roles/containerd/tasks/main.yml`**
-
-```yaml
----
-# 安装 containerd 依赖
-- name: Install containerd dependencies
+- name: 安装 Containerd 依赖包
   apt:
     name:
       - curl
       - gnupg
     state: present
 
-# 创建安装目录
-- name: Create containerd directories
+- name: 创建 Containerd 所需目录
   file:
     path: "{{ item }}"
     state: directory
@@ -290,130 +302,118 @@ network_interface: "eth0"
     - /usr/local/lib/systemd/system
     - /opt/cni/bin
 
-# 下载并安装 containerd
-- name: Download containerd
+- name: 下载 Containerd 安装包
   get_url:
     url: "https://github.com/containerd/containerd/releases/download/v{{ containerd_version }}/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
     dest: "/tmp/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
     mode: '0644'
   register: containerd_download
 
-- name: Extract containerd
+- name: 解压 Containerd 安装包
   unarchive:
     src: "/tmp/containerd-{{ containerd_version }}-linux-amd64.tar.gz"
     dest: /usr/local
     remote_src: yes
   when: containerd_download.changed
 
-# 下载并安装 runc
-- name: Download runc
+- name: 下载 runc 二进制文件
   get_url:
     url: "https://github.com/opencontainers/runc/releases/download/v{{ runc_version }}/runc.amd64"
     dest: /tmp/runc.amd64
     mode: '0644'
 
-- name: Install runc
+- name: 安装 runc
   copy:
     src: /tmp/runc.amd64
     dest: /usr/local/sbin/runc
     mode: '0755'
     remote_src: yes
 
-# 下载并安装 CNI 插件
-- name: Download CNI plugins
+- name: 下载 CNI 插件
   get_url:
     url: "https://github.com/containernetworking/plugins/releases/download/v{{ cni_plugins_version }}/cni-plugins-linux-amd64-v{{ cni_plugins_version }}.tgz"
     dest: "/tmp/cni-plugins-linux-amd64-v{{ cni_plugins_version }}.tgz"
     mode: '0644'
 
-- name: Extract CNI plugins
+- name: 解压 CNI 插件
   unarchive:
     src: "/tmp/cni-plugins-linux-amd64-v{{ cni_plugins_version }}.tgz"
     dest: /opt/cni/bin
     remote_src: yes
 
-# 下载 containerd systemd 服务文件
-- name: Download containerd service file
+- name: 下载 Containerd systemd 服务文件
   get_url:
     url: https://raw.githubusercontent.com/containerd/containerd/main/containerd.service
     dest: /usr/local/lib/systemd/system/containerd.service
     mode: '0644'
 
-# 生成 containerd 配置
-- name: Generate default containerd config
+- name: 生成 Containerd 默认配置
   shell: containerd config default > /etc/containerd/config.toml
   args:
     creates: /etc/containerd/config.toml
 
-# 配置 systemd cgroup driver (Containerd 2.x)
-- name: Configure systemd cgroup driver for containerd 2.x
+- name: 配置 Containerd 使用 systemd cgroup driver
   lineinfile:
     path: /etc/containerd/config.toml
     regexp: 'SystemdCgroup = false'
     line: '            SystemdCgroup = true'
     state: present
 
-# 配置 sandbox_image
-- name: Configure sandbox image
+- name: 配置 Containerd sandbox 镜像
   lineinfile:
     path: /etc/containerd/config.toml
     regexp: 'sandbox_image = "registry.k8s.io/pause:.*"'
     line: '    sandbox_image = "registry.k8s.io/pause:3.10"'
     state: present
 
-# 启动 containerd
-- name: Reload systemd daemon
+- name: 重新加载 systemd 配置
   systemd:
     daemon_reload: yes
 
-- name: Enable and start containerd
+- name: 启动并启用 Containerd 服务
   systemd:
     name: containerd
     state: started
     enabled: yes
 
-- name: Verify containerd is running
+- name: 验证 Containerd 运行状态
   shell: systemctl is-active containerd
   register: containerd_status
   changed_when: false
 
-- name: Fail if containerd is not running
+- name: 检查 Containerd 是否正常运行
   fail:
-    msg: "Containerd is not running!"
+    msg: "Containerd 未正常运行！"
   when: containerd_status.stdout != "active"
 ```
 
-### 6. Kubernetes 包角色
-
-**`roles/k8s-packages/tasks/main.yml`**
+**`roles/kubernetes/tasks/03-k8s-packages.yml`**
 
 ```yaml
 ---
-# 添加 Kubernetes APT 仓库 (Kubernetes 1.35+)
-# 注意：从 2023年9月13日起，旧仓库 apt.kubernetes.io 已弃用
-# 新仓库使用 pkgs.k8s.io，每个小版本有独立仓库
+# 安装 Kubernetes 组件（kubelet, kubeadm, kubectl）
 
-- name: Create apt keyrings directory
+- name: 创建 apt 密钥环目录
   file:
     path: /etc/apt/keyrings
     state: directory
     mode: '0755'
 
-- name: Download Kubernetes GPG key
+- name: 下载 Kubernetes GPG 密钥
   shell: |
     curl -fsSL https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/Release.key | \
     gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
   args:
     creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 
-- name: Add Kubernetes apt repository
+- name: 添加 Kubernetes apt 仓库
   apt_repository:
     repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/ /"
     state: present
     filename: kubernetes
     update_cache: yes
 
-- name: Install kubelet, kubeadm and kubectl
+- name: 安装 kubelet, kubeadm 和 kubectl
   apt:
     name:
       - kubelet
@@ -422,8 +422,7 @@ network_interface: "eth0"
     state: present
     update_cache: yes
 
-# 固定版本，防止自动升级
-- name: Hold kubelet, kubeadm and kubectl versions
+- name: 固定 kubelet, kubeadm 和 kubectl 版本（防止自动升级）
   dpkg_selections:
     name: "{{ item }}"
     selection: hold
@@ -432,20 +431,18 @@ network_interface: "eth0"
     - kubeadm
     - kubectl
 
-# 启用 kubelet 服务
-- name: Enable kubelet service
+- name: 启用 kubelet 服务
   systemd:
     name: kubelet
     enabled: yes
 
-# 配置 kubelet 使用 systemd cgroup driver
-- name: Configure kubelet to use systemd cgroup driver
+- name: 创建 kubelet 环境变量文件
   file:
     path: /etc/default/kubelet
     state: touch
     mode: '0644'
 
-- name: Add kubelet extra args
+- name: 配置 kubelet 使用 systemd cgroup driver
   lineinfile:
     path: /etc/default/kubelet
     line: 'KUBELET_EXTRA_ARGS="--cgroup-driver=systemd"'
@@ -453,9 +450,135 @@ network_interface: "eth0"
     state: present
 ```
 
-### 7. Master 节点角色
+**`roles/kubernetes/tasks/04-cluster-init.yml`**
 
-**`roles/master/templates/kubeadm-config.yaml.j2`**
+```yaml
+---
+# 初始化 Kubernetes 单节点集群
+
+- name: 检查 Kubernetes 是否已初始化
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: k8s_initialized
+
+- name: 如已初始化则重置 Kubernetes（可选）
+  shell: kubeadm reset -f
+  when: 
+    - k8s_initialized.stat.exists
+    - force_reset | default(false) | bool
+
+- name: 创建 kubeadm 配置目录
+  file:
+    path: /root/kubeadm
+    state: directory
+    mode: '0755'
+
+- name: 复制 kubeadm 配置文件
+  template:
+    src: kubeadm-config.yaml.j2
+    dest: /root/kubeadm/kubeadm-config.yaml
+    mode: '0644'
+
+- name: 拉取 Kubernetes 镜像
+  shell: kubeadm config images pull
+  when: not k8s_initialized.stat.exists or (force_reset | default(false) | bool)
+
+- name: 初始化 Kubernetes 集群
+  shell: |
+    kubeadm init --config=/root/kubeadm/kubeadm-config.yaml
+  when: not k8s_initialized.stat.exists or (force_reset | default(false) | bool)
+  register: kubeadm_init
+
+# 配置 kubectl
+- name: 为 root 用户创建 .kube 目录
+  file:
+    path: /root/.kube
+    state: directory
+    mode: '0755'
+
+- name: 复制 admin.conf 到 root 用户的 kube 配置
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes
+    mode: '0644'
+
+- name: 为 ubuntu 用户创建 .kube 目录
+  file:
+    path: /home/ubuntu/.kube
+    state: directory
+    mode: '0755'
+    owner: ubuntu
+    group: ubuntu
+
+- name: 复制 admin.conf 到 ubuntu 用户的 kube 配置
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /home/ubuntu/.kube/config
+    remote_src: yes
+    mode: '0644'
+    owner: ubuntu
+    group: ubuntu
+
+# 安装 CNI (Calico) - 可选项
+- name: 下载 Calico 部署清单
+  get_url:
+    url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/calico.yaml"
+    dest: /root/calico.yaml
+    mode: '0644'
+  when: cni_enabled | default(true) | bool
+
+- name: 部署 Calico CNI
+  shell: kubectl apply -f /root/calico.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: cni_enabled | default(true) | bool
+
+# 等待 Calico 就绪
+- name: 等待 Calico Pod 就绪
+  shell: |
+    kubectl wait --for=condition=ready pod \
+      -l k8s-app=calico-node \
+      -n kube-system \
+      --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  when: cni_enabled | default(true) | bool
+
+# 移除控制平面污点，允许在单节点上调度 Pod
+- name: 移除控制平面污点以允许调度工作负载
+  shell: |
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane- 2>/dev/null || true
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+
+# 验证集群状态
+- name: 获取集群信息
+  shell: kubectl cluster-info
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: cluster_info
+  changed_when: false
+
+- name: 显示集群信息
+  debug:
+    var: cluster_info.stdout_lines
+
+- name: 获取节点状态
+  shell: kubectl get nodes -o wide
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: node_status
+  changed_when: false
+
+- name: 显示节点状态
+  debug:
+    var: node_status.stdout_lines
+```
+
+**`roles/kubernetes/templates/kubeadm-config.yaml.j2`**
 
 ```yaml
 apiVersion: kubeadm.k8s.io/v1beta4
@@ -472,7 +595,6 @@ nodeRegistration:
 apiVersion: kubeadm.k8s.io/v1beta4
 kind: ClusterConfiguration
 kubernetesVersion: v{{ k8s_version }}.0
-controlPlaneEndpoint: {{ control_plane_endpoint }}
 networking:
   podSubnet: {{ pod_network_cidr }}
   serviceSubnet: {{ service_cidr }}
@@ -484,223 +606,27 @@ kind: KubeletConfiguration
 cgroupDriver: systemd
 ```
 
-**`roles/master/tasks/main.yml`**
+**`roles/kubernetes/handlers/main.yml`**
 
 ```yaml
 ---
-# 初始化 Kubernetes 控制平面
-- name: Check if Kubernetes is already initialized
-  stat:
-    path: /etc/kubernetes/admin.conf
-  register: k8s_initialized
-
-- name: Reset Kubernetes if already initialized (optional)
-  shell: kubeadm reset -f
-  when: 
-    - k8s_initialized.stat.exists
-    - force_reset | default(false) | bool
-
-- name: Create kubeadm config directory
-  file:
-    path: /root/kubeadm
-    state: directory
-    mode: '0755'
-
-- name: Copy kubeadm configuration
-  template:
-    src: kubeadm-config.yaml.j2
-    dest: /root/kubeadm/kubeadm-config.yaml
-    mode: '0644'
-
-- name: Pull Kubernetes images
-  shell: kubeadm config images pull
-  when: not k8s_initialized.stat.exists or (force_reset | default(false) | bool)
-
-- name: Initialize Kubernetes cluster
-  shell: |
-    kubeadm init --config=/root/kubeadm/kubeadm-config.yaml
-  when: not k8s_initialized.stat.exists or (force_reset | default(false) | bool)
-  register: kubeadm_init
-
-# 配置 kubectl
-- name: Create .kube directory for root
-  file:
-    path: /root/.kube
-    state: directory
-    mode: '0755'
-
-- name: Copy admin.conf to root's kube config
-  copy:
-    src: /etc/kubernetes/admin.conf
-    dest: /root/.kube/config
-    remote_src: yes
-    mode: '0644'
-
-- name: Create .kube directory for ubuntu user
-  file:
-    path: /home/ubuntu/.kube
-    state: directory
-    mode: '0755'
-    owner: ubuntu
-    group: ubuntu
-
-- name: Copy admin.conf to ubuntu user's kube config
-  copy:
-    src: /etc/kubernetes/admin.conf
-    dest: /home/ubuntu/.kube/config
-    remote_src: yes
-    mode: '0644'
-    owner: ubuntu
-    group: ubuntu
-
-# 安装 CNI (Calico)
-- name: Download Calico manifests
-  get_url:
-    url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/calico.yaml"
-    dest: /root/calico.yaml
-    mode: '0644'
-
-- name: Install Calico CNI
-  shell: kubectl apply -f /root/calico.yaml
-  environment:
-    KUBECONFIG: /etc/kubernetes/admin.conf
-
-# 等待 Calico 就绪
-- name: Wait for Calico pods to be ready
-  shell: |
-    kubectl wait --for=condition=ready pod \
-      -l k8s-app=calico-node \
-      -n kube-system \
-      --timeout=300s
-  environment:
-    KUBECONFIG: /etc/kubernetes/admin.conf
-  ignore_errors: yes
-
-# 生成加入命令
-- name: Generate join command
-  shell: kubeadm token create --print-join-command
-  register: join_command
-  changed_when: false
-
-- name: Save join command to file
-  copy:
-    content: "{{ join_command.stdout }}"
-    dest: /root/kubeadm/join-command.sh
-    mode: '0750'
-
-- name: Display join command
-  debug:
-    msg: "Worker join command: {{ join_command.stdout }}"
-
-# 可选：允许在控制平面调度 Pod
-- name: Remove control plane taint (optional for single node)
-  shell: |
-    kubectl taint nodes --all node-role.kubernetes.io/control-plane- 2>/dev/null || true
-  environment:
-    KUBECONFIG: /etc/kubernetes/admin.conf
-  ignore_errors: yes
-  when: allow_pods_on_control_plane | default(false) | bool
-
-# 验证集群状态
-- name: Get cluster info
-  shell: kubectl cluster-info
-  environment:
-    KUBECONFIG: /etc/kubernetes/admin.conf
-  register: cluster_info
-  changed_when: false
-
-- name: Display cluster info
-  debug:
-    var: cluster_info.stdout_lines
-
-- name: Get node status
-  shell: kubectl get nodes -o wide
-  environment:
-    KUBECONFIG: /etc/kubernetes/admin.conf
-  register: node_status
-  changed_when: false
-
-- name: Display node status
-  debug:
-    var: node_status.stdout_lines
+- name: 重新加载 sysctl 配置
+  command: sysctl --system
 ```
 
-### 8. Worker 节点角色
-
-**`roles/worker/tasks/main.yml`**
-
-```yaml
----
-# 加入 Kubernetes 集群
-- name: Check if node is already joined
-  stat:
-    path: /etc/kubernetes/kubelet.conf
-  register: kubelet_config
-
-- name: Get join command from master
-  shell: cat /root/kubeadm/join-command.sh
-  delegate_to: "{{ groups['masters'][0] }}"
-  register: join_command_raw
-  changed_when: false
-  run_once: true
-  when: not kubelet_config.stat.exists
-
-- name: Join Kubernetes cluster
-  shell: |
-    {{ join_command_raw.stdout }}
-  when: not kubelet_config.stat.exists
-  register: join_result
-
-- name: Verify kubelet is running
-  systemd:
-    name: kubelet
-    state: started
-    enabled: yes
-
-- name: Wait for kubelet to stabilize
-  pause:
-    seconds: 10
-  when: not kubelet_config.stat.exists
-```
-
-### 9. 主 Playbook
+### 5. 主 Playbook
 
 **`playbooks/site.yml`**
 
 ```yaml
 ---
-# Kubernetes 1.35 集群部署 Playbook
-# 支持 Ubuntu 24.04
+# 部署三个独立的 Kubernetes 1.35 单节点集群
 
-- name: Apply common configuration to all nodes
-  hosts: k8s
+- name: 部署 Kubernetes 单节点集群
+  hosts: all
   become: yes
   roles:
-    - common
-
-- name: Install containerd on all nodes
-  hosts: k8s
-  become: yes
-  roles:
-    - containerd
-
-- name: Install Kubernetes packages on all nodes
-  hosts: k8s
-  become: yes
-  roles:
-    - k8s-packages
-
-- name: Initialize Kubernetes control plane
-  hosts: masters
-  become: yes
-  roles:
-    - master
-
-- name: Join worker nodes to cluster
-  hosts: workers
-  become: yes
-  roles:
-    - worker
+    - kubernetes
 ```
 
 ## 部署步骤
@@ -720,7 +646,7 @@ mkdir -p ~/k8s-ansible
 cd ~/k8s-ansible
 
 # 创建项目结构
-mkdir -p inventory group_vars roles/{common,containerd,k8s-packages,master,worker}/{tasks,templates,handlers} playbooks
+mkdir -p inventory group_vars roles/kubernetes/{tasks,templates,handlers} playbooks
 ```
 
 ### 2. 配置 SSH 免密登录
@@ -730,7 +656,7 @@ mkdir -p inventory group_vars roles/{common,containerd,k8s-packages,master,worke
 ssh-keygen -t rsa -b 4096
 
 # 复制公钥到所有节点
-for host in 192.168.1.10 192.168.1.11 192.168.1.12 192.168.1.13; do
+for host in 192.168.1.10 192.168.1.11 192.168.1.12; do
     ssh-copy-id ubuntu@$host
 done
 ```
@@ -756,11 +682,15 @@ ansible-playbook playbooks/site.yml -v
 
 ### 4. 验证集群
 
-在控制平面节点上执行：
+在每个节点上执行：
 
 ```bash
 # 检查节点状态
 kubectl get nodes -o wide
+
+# 预期输出（单节点，控制平面可调度）：
+# NAME         STATUS   ROLES           AGE   VERSION
+# k8s-node01   Ready    control-plane   5m    v1.35.x
 
 # 检查系统 Pod
 kubectl get pods -n kube-system
@@ -773,59 +703,28 @@ kubectl cluster-info
 
 # 查看版本
 kubectl version
+
+# 测试部署应用
+kubectl create deployment nginx --image=nginx
+kubectl get pods
 ```
 
-## 常用运维命令
+## 重置集群
 
-### 添加新 Worker 节点
-
-```bash
-# 在控制平面生成新的加入命令
-kubeadm token create --print-join-command
-
-# 在新节点上执行生成的命令
-```
-
-### 升级 Kubernetes
+如需重置某个集群节点：
 
 ```bash
-# 1. 升级 kubeadm
-sudo apt-mark unhold kubeadm && \
-sudo apt-get update && \
-sudo apt-get install -y kubeadm=1.35.x-00 && \
-sudo apt-mark hold kubeadm
-
-# 2. 验证升级计划
-sudo kubeadm upgrade plan
-
-# 3. 执行升级
-sudo kubeadm upgrade apply v1.35.x
-
-# 4. 升级 kubelet 和 kubectl
-sudo apt-mark unhold kubelet kubectl && \
-sudo apt-get update && \
-sudo apt-get install -y kubelet=1.35.x-00 kubectl=1.35.x-00 && \
-sudo apt-mark hold kubelet kubectl
-
-# 5. 重启 kubelet
-sudo systemctl daemon-reload
-sudo systemctl restart kubelet
-```
-
-### 重置节点
-
-```bash
-# 排空节点
-kubectl drain <node-name> --delete-emptydir-data --force --ignore-daemonsets
-
-# 重置 kubeadm
-sudo kubeadm reset
+# 在目标节点上执行
+sudo kubeadm reset -f
 
 # 清理 iptables
 sudo iptables -F && sudo iptables -t nat -F && sudo iptables -t mangle -F && sudo iptables -X
 
-# 删除节点
-kubectl delete node <node-name>
+# 清理 CNI 配置
+sudo rm -rf /etc/cni/net.d
+
+# 然后重新运行 playbook
+ansible-playbook playbooks/site.yml -l k8s-node01
 ```
 
 ## 故障排查
@@ -851,6 +750,7 @@ sudo kubeadm init --v=5
 | `node NotReady` | 检查 CNI 插件是否正确安装 |
 | `Failed to create shim` | 检查 containerd 配置和 cgroup 驱动 |
 | `connection refused` | 检查 API Server 和端口配置 |
+| `Pod 无法调度` | 确认控制平面污点已移除 |
 
 ## 参考文档
 
@@ -865,4 +765,5 @@ sudo kubeadm init --v=5
 
 | 日期 | 版本 | 说明 |
 |------|------|------|
+| 2025-03-23 | 2.0 | 重构为单角色、单节点模式，支持三个独立集群 |
 | 2025-03-23 | 1.0 | 初始版本，支持 Kubernetes 1.35 + Ubuntu 24.04 |
