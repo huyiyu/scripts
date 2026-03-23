@@ -1,0 +1,3 @@
+---
+# cluster2 特定配置
+cni_enabled: false

@@ -1,0 +1,23 @@
+---
+# Kubernetes 单节点集群部署主入口
+
+- name: 系统准备（基础配置）
+  import_tasks: 01-system-prep.yml
+
+- name: 同步离线资源
+  import_tasks: 02-sync-resources.yml
+
+- name: 配置 apt 源并安装基础软件包
+  import_tasks: 03-apt-config.yml
+
+- name: 安装 Containerd
+  import_tasks: 04-containerd.yml
+
+- name: 安装 Kubernetes 包
+  import_tasks: 05-k8s-packages.yml
+
+- name: 导入离线镜像
+  import_tasks: 06-offline-images.yml
+
+- name: 初始化集群
+  import_tasks: 07-cluster-init.yml

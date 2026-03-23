@@ -1,0 +1,112 @@
+---
+# ==========================================
+# 离线部署配置
+# ==========================================
+
+# ------------------------------------------
+# Kubernetes 版本配置（修改后需重新准备离线资源）
+# ------------------------------------------
+k8s_version: "1.34.3"
+kubernetes_version_full: "v{{ k8s_version }}"
+
+# 集群网络配置
+pod_network_cidr: "10.244.0.0/16"
+service_cidr: "10.96.0.0/12"
+
+# ------------------------------------------
+# 容器运行时版本配置
+# ------------------------------------------
+containerd_version: "2.2.1"
+runc_version: "1.3.4"
+cni_plugins_version: "1.8.0"
+pause_version: "3.10.1"
+
+# ------------------------------------------
+# CNI 网络插件版本配置
+# ------------------------------------------
+cni_enabled: true
+cni_provider: "calico"
+calico_version: "v3.30.6"
+calico_operator_version: "v1.38.11"
+
+# ------------------------------------------
+# etcd 和 CoreDNS 版本
+# ------------------------------------------
+etcd_version: "3.6.5-0"
+coredns_version: "v1.12.1"
+
+# ------------------------------------------
+# 网络接口配置（根据实际环境修改）
+# ------------------------------------------
+network_interface: "eth0"
+
+# ------------------------------------------
+# 离线资源路径（在目标节点上的路径）
+# ------------------------------------------
+offline_packages_path: "/opt/offline/packages"
+offline_images_path: "/opt/offline/images"
+
+# ------------------------------------------
+# 离线资源文件名
+# ------------------------------------------
+containerd_package: "containerd-{{ containerd_version }}-linux-amd64.tar.gz"
+runc_binary: "runc.amd64"
+containerd_service_file: "containerd.service"
+cni_plugins_package: "cni-plugins-linux-amd64-v{{ cni_plugins_version }}.tgz"
+# Calico Operator 部署文件
+calico_operator_manifest: "tigera-operator.yaml"
+calico_custom_resources: "custom-resources.yaml"
+k8s_images_package: "k8s-images-v{{ k8s_version }}.tar"
+calico_images_package: "calico-images-{{ calico_version }}.tar"
+
+# ------------------------------------------
+# Kubernetes 镜像列表
+# ------------------------------------------
+k8s_images:
+  - "registry.k8s.io/kube-apiserver:{{ kubernetes_version_full }}"
+  - "registry.k8s.io/kube-controller-manager:{{ kubernetes_version_full }}"
+  - "registry.k8s.io/kube-scheduler:{{ kubernetes_version_full }}"
+  - "registry.k8s.io/kube-proxy:{{ kubernetes_version_full }}"
+  - "registry.k8s.io/pause:{{ pause_version }}"
+  - "registry.k8s.io/etcd:{{ etcd_version }}"
+  - "registry.k8s.io/coredns/coredns:{{ coredns_version }}"
+
+# ------------------------------------------
+# Calico 镜像列表（Operator 部署方式所需的所有镜像）
+# ------------------------------------------
+calico_images:
+  # Operator
+  - "quay.io/tigera/operator:{{ calico_operator_version }}"
+  # Calico 核心组件（Operator 从 quay.io 拉取）
+  - "quay.io/calico/node:{{ calico_version }}"
+  - "quay.io/calico/cni:{{ calico_version }}"
+  - "quay.io/calico/kube-controllers:{{ calico_version }}"
+  - "quay.io/calico/typha:{{ calico_version }}"
+  # CSI 相关组件
+  - "quay.io/calico/csi:{{ calico_version }}"
+  - "quay.io/calico/node-driver-registrar:{{ calico_version }}"
+  # FlexVolume 驱动
+  - "quay.io/calico/pod2daemon-flexvol:{{ calico_version }}"
+
+# ------------------------------------------
+# 部署用户配置（使用 root 直接部署）
+# ------------------------------------------
+deploy_user: "root"
+deploy_user_home: "/root"
+
+# ------------------------------------------
+# 系统配置
+# ------------------------------------------
+force_reset: false
+timezone: "Asia/Shanghai"
+
+kernel_modules:
+  - overlay
+  - br_netfilter
+
+sysctl_params:
+  net.bridge.bridge-nf-call-iptables: "1"
+  net.bridge.bridge-nf-call-ip6tables: "1"
+  net.ipv4.ip_forward: "1"
+  net.ipv6.conf.all.forwarding: "1"
+  vm.swappiness: "0"

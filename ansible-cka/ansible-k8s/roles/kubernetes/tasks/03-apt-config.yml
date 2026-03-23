@@ -1,0 +1,32 @@
+---
+# 安装基础软件包（在线 apt 模式）
+
+- name: 更新 apt 缓存
+  apt:
+    update_cache: yes
+    cache_valid_time: 3600
+
+- name: 安装基础依赖包
+  apt:
+    name:
+      - apt-transport-https
+      - ca-certificates
+      - curl
+      - gnupg
+      - jq
+      - vim
+      - net-tools
+      - ipset
+      - ipvsadm
+      - socat
+      - conntrack
+      - ethtool
+      - iptables
+      - libnftnl11
+      - libip4tc2
+      - libip6tc2
+      - libxtables12
+      - libmnl0
+      - libnfnetlink0
+      - libnetfilter-conntrack3
+    state: present

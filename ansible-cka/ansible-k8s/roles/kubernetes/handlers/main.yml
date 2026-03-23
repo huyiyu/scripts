@@ -1,0 +1,17 @@
+---
+- name: 重新加载 sysctl 配置
+  command: sysctl --system
+
+- name: 重新加载 systemd 配置
+  systemd:
+    daemon_reload: yes
+
+- name: 重启 containerd
+  systemd:
+    name: containerd
+    state: restarted
+
+- name: 重启 kubelet
+  systemd:
+    name: kubelet
+    state: restarted

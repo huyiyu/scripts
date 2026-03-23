@@ -1,0 +1,10 @@
+# Ignore all downloaded packages and images
+packages/containerd/*
+packages/cni/*
+packages/k8s/*
+packages/calico/*
+images/*.tar
+images/*.tar.gz
+
+# Keep directory structure
+!**/.gitkeep

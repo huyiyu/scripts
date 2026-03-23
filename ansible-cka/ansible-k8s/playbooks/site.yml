@@ -1,0 +1,8 @@
+---
+# 部署三个独立的 Kubernetes 单节点集群 - 离线版本
+
+- name: 部署 Kubernetes 单节点集群
+  hosts: all
+  become: yes
+  roles:
+    - kubernetes

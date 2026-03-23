@@ -1,0 +1,91 @@
+---
+# 离线镜像导入任务
+
+# ==========================================
+# 1. 检查离线镜像包
+# ==========================================
+- name: 检查离线镜像目录
+  stat:
+    path: "{{ offline_images_path }}"
+  register: offline_images_dir
+
+- name: 检查 Kubernetes 镜像包
+  stat:
+    path: "{{ offline_images_path }}/{{ k8s_images_package }}"
+  register: k8s_images_tar
+
+- name: 检查 Calico 镜像包
+  stat:
+    path: "{{ offline_images_path }}/{{ calico_images_package }}"
+  register: calico_images_tar
+
+# ==========================================
+# 2. 导入 Kubernetes 镜像
+# ==========================================
+- name: 复制 Kubernetes 镜像包到目标节点
+  copy:
+    src: "{{ offline_images_path }}/{{ k8s_images_package }}"
+    dest: "/tmp/{{ k8s_images_package }}"
+    mode: '0644'
+    remote_src: yes
+  when: k8s_images_tar.stat.exists | default(false)
+
+- name: 导入 Kubernetes 镜像到 containerd
+  shell: |
+    ctr -n k8s.io images import /tmp/{{ k8s_images_package }}
+  when: k8s_images_tar.stat.exists | default(false)
+  ignore_errors: yes
+
+# ==========================================
+# 3. 导入 Calico 镜像
+# ==========================================
+- name: 复制 Calico 镜像包到目标节点
+  copy:
+    src: "{{ offline_images_path }}/{{ calico_images_package }}"
+    dest: "/tmp/{{ calico_images_package }}"
+    mode: '0644'
+    remote_src: yes
+  when: calico_images_tar.stat.exists | default(false)
+
+- name: 导入 Calico 镜像到 containerd
+  shell: |
+    ctr -n k8s.io images import /tmp/{{ calico_images_package }}
+  when: calico_images_tar.stat.exists | default(false)
+  ignore_errors: yes
+
+# ==========================================
+# 4. 验证镜像导入
+# ==========================================
+- name: 列出已导入的 Kubernetes 镜像
+  shell: |
+    ctr -n k8s.io images list | grep -E "(kube-apiserver|kube-controller-manager|kube-scheduler|etcd|pause|coredns)" || true
+  register: imported_k8s_images
+  changed_when: false
+
+- name: 显示已导入的 Kubernetes 镜像
+  debug:
+    msg: "{{ imported_k8s_images.stdout_lines }}"
+
+- name: 列出已导入的 Calico 镜像
+  shell: |
+    ctr -n k8s.io images list | grep -E "calico" || true
+  register: imported_calico_images
+  changed_when: false
+  when: cni_enabled | default(true) | bool
+
+- name: 显示已导入的 Calico 镜像
+  debug:
+    msg: "{{ imported_calico_images.stdout_lines }}"
+  when: cni_enabled | default(true) | bool
+
+# ==========================================
+# 5. 清理临时文件
+# ==========================================
+- name: 删除临时镜像包
+  file:
+    path: "/tmp/{{ item }}"
+    state: absent
+  loop:
+    - "{{ k8s_images_package }}"
+    - "{{ calico_images_package }}"
+  ignore_errors: yes

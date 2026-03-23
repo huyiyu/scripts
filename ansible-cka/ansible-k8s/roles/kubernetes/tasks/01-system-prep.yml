@@ -1,0 +1,70 @@
+---
+# 系统基础配置（第一部分：不依赖离线资源的配置）
+
+# ==========================================
+# 1. 加载内核模块
+# ==========================================
+- name: 加载 Kubernetes 所需的内核模块
+  modprobe:
+    name: "{{ item }}"
+    state: present
+  loop: "{{ kernel_modules }}"
+
+- name: 确保内核模块持久化配置
+  lineinfile:
+    path: /etc/modules-load.d/k8s.conf
+    line: "{{ item }}"
+    create: yes
+  loop: "{{ kernel_modules }}"
+
+# ==========================================
+# 2. 配置系统参数
+# ==========================================
+- name: 配置 Kubernetes 所需的 sysctl 参数
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+    reload: yes
+    sysctl_file: /etc/sysctl.d/k8s.conf
+  loop: "{{ sysctl_params | dict2items }}"
+
+# ==========================================
+# 3. 禁用 Swap
+# ==========================================
+- name: 立即禁用 swap
+  command: swapoff -a
+  changed_when: true
+
+- name: 从 /etc/fstab 中移除 swap 配置
+  replace:
+    path: /etc/fstab
+    regexp: '^([^#].*?\s+swap\s+.*)$'
+    replace: '# \1'
+
+# ==========================================
+# 4. 配置时区
+# ==========================================
+- name: 设置时区
+  timezone:
+    name: "{{ timezone }}"
+
+# ==========================================
+# 5. 禁用防火墙
+# ==========================================
+- name: 禁用 UFW 防火墙
+  systemd:
+    name: ufw
+    state: stopped
+    enabled: no
+  ignore_errors: yes
+
+# ==========================================
+# 6. 配置 hosts 文件
+# ==========================================
+- name: 添加 hosts 条目
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars[item]['ansible_host'] }} {{ item }}"
+    state: present
+  loop: "{{ groups['all'] }}"

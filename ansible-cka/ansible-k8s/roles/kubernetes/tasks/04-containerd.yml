@@ -1,0 +1,141 @@
+---
+# 安装和配置 Containerd 容器运行时
+
+# ==========================================
+# 1. 创建所需目录
+# ==========================================
+- name: 创建 Containerd 所需目录
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - /etc/containerd
+    - /usr/local/lib/systemd/system
+    - /opt/cni/bin
+  check_mode: no
+
+# ==========================================
+# 2. 离线安装 Containerd
+# ==========================================
+- name: 检查离线 Containerd 包是否存在
+  stat:
+    path: "{{ offline_packages_path }}/containerd/{{ containerd_package }}"
+  register: containerd_offline_package
+
+- name: 复制 Containerd 安装包到临时目录
+  copy:
+    src: "{{ offline_packages_path }}/containerd/{{ containerd_package }}"
+    dest: "/tmp/{{ containerd_package }}"
+    mode: '0644'
+    remote_src: yes
+  when: containerd_offline_package.stat.exists | default(false)
+
+- name: 解压 Containerd 安装包
+  unarchive:
+    src: "/tmp/{{ containerd_package }}"
+    dest: /usr/local
+    remote_src: yes
+  when: containerd_offline_package.stat.exists | default(false)
+
+# ==========================================
+# 3. 离线安装 runc
+# ==========================================
+- name: 检查离线 runc 是否存在
+  stat:
+    path: "{{ offline_packages_path }}/containerd/{{ runc_binary }}"
+  register: runc_offline_binary
+
+- name: 复制 runc 到临时目录
+  copy:
+    src: "{{ offline_packages_path }}/containerd/{{ runc_binary }}"
+    dest: "/tmp/{{ runc_binary }}"
+    mode: '0644'
+    remote_src: yes
+  when: runc_offline_binary.stat.exists | default(false)
+
+- name: 安装 runc
+  copy:
+    src: "/tmp/{{ runc_binary }}"
+    dest: /usr/local/sbin/runc
+    mode: '0755'
+    remote_src: yes
+  when: runc_offline_binary.stat.exists | default(false)
+
+# ==========================================
+# 4. 离线安装 CNI 插件
+# ==========================================
+- name: 检查离线 CNI 插件是否存在
+  stat:
+    path: "{{ offline_packages_path }}/cni/{{ cni_plugins_package }}"
+  register: cni_offline_package
+
+- name: 复制 CNI 插件到临时目录
+  copy:
+    src: "{{ offline_packages_path }}/cni/{{ cni_plugins_package }}"
+    dest: "/tmp/{{ cni_plugins_package }}"
+    mode: '0644'
+    remote_src: yes
+  when: cni_offline_package.stat.exists | default(false)
+
+- name: 解压 CNI 插件
+  unarchive:
+    src: "/tmp/{{ cni_plugins_package }}"
+    dest: /opt/cni/bin
+    remote_src: yes
+  when: cni_offline_package.stat.exists | default(false)
+
+# ==========================================
+# 5. 配置 Containerd systemd 服务
+# ==========================================
+- name: 检查离线 systemd 服务文件是否存在
+  stat:
+    path: "{{ offline_packages_path }}/containerd/{{ containerd_service_file }}"
+  register: containerd_service_offline
+
+- name: 复制 Containerd systemd 服务文件
+  copy:
+    src: "{{ offline_packages_path }}/containerd/{{ containerd_service_file }}"
+    dest: /usr/local/lib/systemd/system/containerd.service
+    mode: '0644'
+    remote_src: yes
+  when: containerd_service_offline.stat.exists | default(false)
+
+# ==========================================
+# 6. 生成 Containerd 配置
+# ==========================================
+- name: 生成 Containerd 配置文件
+  template:
+    src: containerd-config.toml.j2
+    dest: /etc/containerd/config.toml
+    mode: '0644'
+  check_mode: no
+
+# ==========================================
+# 7. 启动 Containerd 服务
+# ==========================================
+- name: 重新加载 systemd 配置
+  systemd:
+    daemon_reload: yes
+
+- name: 启动并启用 Containerd 服务
+  systemd:
+    name: containerd
+    state: started
+    enabled: yes
+  ignore_errors: yes
+  when: not ansible_check_mode or containerd_offline_package.stat.exists | default(false)
+
+- name: 验证 Containerd 运行状态
+  shell: systemctl is-active containerd
+  register: containerd_status
+  changed_when: false
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+- name: 检查 Containerd 是否正常运行
+  fail:
+    msg: "Containerd 未正常运行！"
+  when: 
+    - not ansible_check_mode
+    - containerd_status.stdout != "active"

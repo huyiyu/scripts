@@ -1,0 +1,105 @@
+---
+# 安装 Kubernetes 组件（kubelet, kubeadm, kubectl）
+# 使用二进制文件方式安装
+
+# ==========================================
+# 1. 复制 Kubernetes 二进制文件
+# ==========================================
+- name: 复制 kubelet 二进制文件
+  copy:
+    src: "{{ offline_packages_path }}/k8s/kubelet"
+    dest: /usr/local/bin/kubelet
+    mode: '0755'
+    owner: root
+    group: root
+    remote_src: yes
+  ignore_errors: yes
+
+- name: 复制 kubectl 二进制文件
+  copy:
+    src: "{{ offline_packages_path }}/k8s/kubectl"
+    dest: /usr/local/bin/kubectl
+    mode: '0755'
+    owner: root
+    group: root
+    remote_src: yes
+  ignore_errors: yes
+
+- name: 复制 kubeadm 二进制文件
+  copy:
+    src: "{{ offline_packages_path }}/k8s/kubeadm"
+    dest: /usr/local/bin/kubeadm
+    mode: '0755'
+    owner: root
+    group: root
+    remote_src: yes
+  ignore_errors: yes
+
+- name: 创建软链接到 /usr/bin
+  file:
+    src: "/usr/local/bin/{{ item }}"
+    dest: "/usr/bin/{{ item }}"
+    state: link
+    force: yes
+  loop:
+    - kubelet
+    - kubectl
+    - kubeadm
+
+# ==========================================
+# 2. 安装 kubelet systemd 服务
+# ==========================================
+- name: 创建 kubelet systemd 服务文件
+  template:
+    src: kubelet.service.j2
+    dest: /etc/systemd/system/kubelet.service
+    mode: '0644'
+  notify: 重新加载 systemd 配置
+
+- name: 创建 kubelet 配置文件目录
+  file:
+    path: /var/lib/kubelet
+    state: directory
+    mode: '0755'
+
+# ==========================================
+# 3. 配置 kubelet
+# ==========================================
+- name: 启用 kubelet 服务
+  systemd:
+    name: kubelet
+    enabled: yes
+    daemon_reload: yes
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+- name: 创建 kubelet 环境变量文件
+  file:
+    path: /etc/default/kubelet
+    state: touch
+    mode: '0644'
+
+- name: 配置 kubelet 使用 systemd cgroup driver
+  lineinfile:
+    path: /etc/default/kubelet
+    line: 'KUBELET_EXTRA_ARGS="--cgroup-driver=systemd"'
+    create: yes
+    state: present
+
+- name: 验证 Kubernetes 组件安装
+  command: "{{ item }} version"
+  loop:
+    - /usr/local/bin/kubeadm
+    - /usr/local/bin/kubectl
+    - /usr/local/bin/kubelet
+  changed_when: false
+  register: k8s_version_check
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+- name: 显示 Kubernetes 版本信息
+  debug:
+    msg: "{{ item.stdout_lines | default(['版本检查完成']) }}"
+  loop: "{{ k8s_version_check.results }}"
+  loop_control:
+    label: "{{ item.item }}"

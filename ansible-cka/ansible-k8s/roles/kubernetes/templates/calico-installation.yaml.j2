@@ -1,0 +1,46 @@
+---
+# Calico Installation 配置
+# 使用 Tigera Operator 部署 Calico
+
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  # Calico 网络配置
+  calicoNetwork:
+    # 启用 BGP
+    bgp: Enabled
+    
+    # 启用主机端口
+    hostPorts: Enabled
+    
+    # IP 池配置
+    ipPools:
+    - blockSize: 26
+      cidr: {{ pod_network_cidr }}
+      encapsulation: VXLANCrossSubnet
+      natOutgoing: Enabled
+      nodeSelector: all()
+    
+    # Linux 数据平面使用标准 iptables
+    linuxDataplane: Iptables
+    
+    # 多接口模式
+    multiInterfaceMode: None
+    
+    # 节点地址自动检测
+    nodeAddressAutodetectionV4:
+      firstFound: true
+  
+  # CNI 配置
+  cni:
+    ipam:
+      type: Calico
+    type: Calico
+  
+  # 控制平面副本数（单节点集群设为 1）
+  controlPlaneReplicas: 1
+  
+  # 使用 Calico 作为网络插件
+  variant: Calico

@@ -1,0 +1,95 @@
+---
+# 从 Ansible 控制节点同步离线资源到目标节点
+
+# ==========================================
+# 1. 检查本地离线资源
+# ==========================================
+- name: 检查本地离线资源目录
+  stat:
+    path: "{{ playbook_dir }}/../../offline"
+  delegate_to: localhost
+  become: no
+  register: local_offline_stat
+
+- name: 检查本地离线资源是否存在
+  fail:
+    msg: |
+      本地离线资源目录不存在: {{ playbook_dir }}/../../offline
+      请在联网机器上先运行: offline/scripts/prepare-offline.sh
+  when: not local_offline_stat.stat.exists
+  delegate_to: localhost
+  become: no
+
+# ==========================================
+# 2. 创建远程离线资源目录
+# ==========================================
+- name: 创建远程离线资源目录
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ offline_packages_path }}"
+    - "{{ offline_packages_path }}/containerd"
+    - "{{ offline_packages_path }}/cni"
+    - "{{ offline_packages_path }}/k8s"
+    - "{{ offline_packages_path }}/calico"
+    - "{{ offline_images_path }}"
+
+# ==========================================
+# 3. 同步离线资源到目标节点
+# ==========================================
+- name: 查找本地 packages 文件
+  find:
+    paths: "{{ playbook_dir }}/../../offline/packages"
+    recurse: yes
+  delegate_to: localhost
+  become: no
+  register: local_packages_files
+
+- name: 同步 packages 文件到目标节点
+  copy:
+    src: "{{ item.path }}"
+    dest: "{{ offline_packages_path }}/{{ item.path | relpath(playbook_dir + '/../../offline/packages') }}"
+    mode: '0644'
+  loop: "{{ local_packages_files.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when:
+    - local_packages_files.files | length > 0
+    - not item.path.endswith('.gitkeep')
+  register: packages_sync_result
+
+- name: 查找本地 images 文件
+  find:
+    paths: "{{ playbook_dir }}/../../offline/images"
+    recurse: yes
+  delegate_to: localhost
+  become: no
+  register: local_images_files
+
+- name: 同步 images 文件到目标节点
+  copy:
+    src: "{{ item.path }}"
+    dest: "{{ offline_images_path }}/{{ item.path | relpath(playbook_dir + '/../../offline/images') }}"
+    mode: '0644'
+  loop: "{{ local_images_files.files }}"
+  loop_control:
+    label: "{{ item.path | basename }}"
+  when:
+    - local_images_files.files | length > 0
+    - not item.path.endswith('.gitkeep')
+  register: images_sync_result
+
+# ==========================================
+# 4. 显示同步结果
+# ==========================================
+- name: 显示同步结果
+  debug:
+    msg:
+      - "============================"
+      - "离线资源同步完成"
+      - "============================"
+      - "Packages 同步: {{ packages_sync_result.changed | default(false) | ternary('已更新', '无变化') }}"
+      - "Images 同步: {{ images_sync_result.changed | default(false) | ternary('已更新', '无变化') }}"
+      - "远程路径: {{ offline_packages_path }}, {{ offline_images_path }}"

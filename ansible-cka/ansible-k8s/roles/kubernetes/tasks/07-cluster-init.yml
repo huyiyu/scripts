@@ -1,0 +1,288 @@
+---
+# 初始化 Kubernetes 单节点集群
+
+# ==========================================
+# 1. 检查初始化状态
+# ==========================================
+- name: 检查 Kubernetes 是否已初始化
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: k8s_initialized
+
+- name: 如已初始化则重置 Kubernetes
+  shell: kubeadm reset -f
+  when: 
+    - k8s_initialized.stat.exists
+    - force_reset | default(false) | bool
+
+# ==========================================
+# 2. 准备 kubeadm 配置
+# ==========================================
+- name: 创建 kubeadm 配置目录
+  file:
+    path: /root/kubeadm
+    state: directory
+    mode: '0755'
+
+- name: 复制 kubeadm 配置文件
+  template:
+    src: kubeadm-config.yaml.j2
+    dest: /root/kubeadm/kubeadm-config.yaml
+    mode: '0644'
+
+# ==========================================
+# 3. 配置 kubelet drop-in（确保 kubeadm 能正确管理 kubelet）
+# ==========================================
+- name: 创建 kubelet 服务 drop-in 目录
+  file:
+    path: /etc/systemd/system/kubelet.service.d
+    state: directory
+    mode: '0755'
+
+- name: 配置 kubelet kubeadm drop-in
+  copy:
+    content: |
+      [Service]
+      Environment="KUBELET_KUBECONFIG_ARGS=--bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf --kubeconfig=/etc/kubernetes/kubelet.conf"
+      Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
+      EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+      ExecStart=
+      ExecStart=/usr/local/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+    dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+    mode: '0644'
+
+- name: 重新加载 systemd 配置
+  systemd:
+    daemon_reload: yes
+
+# ==========================================
+# 4. 初始化集群
+# ==========================================
+- name: 初始化 Kubernetes 集群
+  shell: |
+    kubeadm init --config=/root/kubeadm/kubeadm-config.yaml --v=5
+  when: not k8s_initialized.stat.exists or (force_reset | default(false) | bool)
+  register: kubeadm_init
+
+# ==========================================
+# 4. 配置 kubectl
+# ==========================================
+- name: 为 root 用户创建 .kube 目录
+  file:
+    path: /root/.kube
+    state: directory
+    mode: '0755'
+
+- name: 复制 admin.conf 到 root 用户的 kube 配置
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: /root/.kube/config
+    remote_src: yes
+    mode: '0644'
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+- name: 为 {{ deploy_user }} 用户创建 .kube 目录
+  file:
+    path: "{{ deploy_user_home }}/.kube"
+    state: directory
+    mode: '0755'
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+
+- name: 复制 admin.conf 到 {{ deploy_user }} 用户的 kube 配置
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "{{ deploy_user_home }}/.kube/config"
+    remote_src: yes
+    mode: '0644'
+    owner: "{{ deploy_user }}"
+    group: "{{ deploy_user }}"
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+# ==========================================
+# 5. 安装 CNI (Calico Operator 方式)
+# ==========================================
+- name: "部署 Calico (Operator 方式)"
+  block:
+    - name: "创建 Calico 安装目录"
+      file:
+        path: /opt/calico
+        state: directory
+        mode: '0755'
+
+    - name: "复制 Tigera Operator 部署文件"
+      copy:
+        src: "{{ offline_packages_path }}/calico/{{ calico_operator_manifest }}"
+        dest: /opt/calico/tigera-operator.yaml
+        mode: '0644'
+        remote_src: yes
+
+    - name: "生成 Calico Installation 配置"
+      template:
+        src: calico-installation.yaml.j2
+        dest: /opt/calico/calico-installation.yaml
+        mode: '0644'
+
+    - name: "部署 Tigera Operator"
+      shell: |
+        kubectl create -f /opt/calico/tigera-operator.yaml 2>/dev/null || \
+        kubectl apply -f /opt/calico/tigera-operator.yaml
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: operator_deploy
+      ignore_errors: yes
+
+    - name: "等待 Tigera Operator 就绪"
+      shell: |
+        kubectl wait --for=condition=ready pod \
+          -l name=tigera-operator \
+          -n tigera-operator \
+          --timeout=120s 2>/dev/null || echo 'Operator pod not ready yet'
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      ignore_errors: yes
+
+    - name: "等待 Calico CRD 就绪"
+      shell: |
+        echo "等待 Installation CRD 就绪..."
+        for i in {1..60}; do
+          if kubectl get crd installations.operator.tigera.io 2>/dev/null; then
+            echo "Installation CRD 已就绪"
+            exit 0
+          fi
+          echo "等待 CRD 中... ($i/60)"
+          sleep 5
+        done
+        echo "CRD 等待超时"
+        exit 1
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: crd_wait
+      until: crd_wait.rc == 0
+      retries: 3
+      delay: 1
+      ignore_errors: yes
+
+    - name: "创建 Calico Installation"
+      shell: |
+        kubectl apply -f /opt/calico/calico-installation.yaml
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      register: calico_install
+
+    - name: "等待 Calico 安装完成"
+      shell: |
+        sleep 10
+        kubectl wait --for=condition=ready pod \
+          -l k8s-app=calico-node \
+          -n calico-system \
+          --timeout=300s 2>/dev/null || echo 'Calico nodes not ready yet'
+      environment:
+        KUBECONFIG: /etc/kubernetes/admin.conf
+      ignore_errors: yes
+  when: 
+    - not ansible_check_mode
+    - cni_enabled | default(true) | bool
+    - cni_provider == "calico"
+
+# ==========================================
+# 6. 等待 Calico 就绪
+# ==========================================
+- name: 等待 Calico 安装完成
+  shell: |
+    kubectl wait --for=condition=ready pod \
+      -l k8s-app=calico-node \
+      -n calico-system \
+      --timeout=300s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  when: 
+    - not ansible_check_mode
+    - cni_enabled | default(true) | bool
+
+- name: 等待 Calico API Server 就绪（如启用）
+  shell: |
+    kubectl wait --for=condition=ready pod \
+      -l k8s-app=calico-apiserver \
+      -n calico-system \
+      --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  when: 
+    - not ansible_check_mode
+    - cni_enabled | default(true) | bool
+
+# ==========================================
+# 7. 配置控制平面
+# ==========================================
+- name: 移除控制平面污点以允许调度工作负载
+  shell: |
+    kubectl taint nodes --all node-role.kubernetes.io/control-plane- 2>/dev/null || true
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+# ==========================================
+# 8. 验证集群状态
+# ==========================================
+- name: 获取集群信息
+  shell: kubectl cluster-info
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: cluster_info
+  changed_when: false
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+- name: 显示集群信息
+  debug:
+    var: cluster_info.stdout_lines | default(['集群未初始化'])
+  when: not ansible_check_mode
+
+- name: 获取节点状态
+  shell: kubectl get nodes -o wide
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: node_status
+  changed_when: false
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+- name: 显示节点状态
+  debug:
+    var: node_status.stdout_lines | default(['节点状态未知'])
+  when: not ansible_check_mode
+
+- name: 获取系统 Pod 状态
+  shell: kubectl get pods -n kube-system
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: system_pods
+  changed_when: false
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+- name: 显示系统 Pod 状态
+  debug:
+    var: system_pods.stdout_lines | default(['系统 Pod 状态未知'])
+  when: not ansible_check_mode
+
+- name: 获取 Calico 状态（如安装）
+  shell: |
+    kubectl get tigerastatus default 2>/dev/null || echo "Calico tigerastatus 未找到"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: calico_status
+  changed_when: false
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+- name: 显示 Calico 状态
+  debug:
+    var: calico_status.stdout | default('Calico 状态未知')
+  when: not ansible_check_mode
