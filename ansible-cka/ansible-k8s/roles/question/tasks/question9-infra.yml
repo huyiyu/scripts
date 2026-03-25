@@ -1,0 +1,251 @@
+---
+# Question 9 基础设施
+# 部署 Gateway API 基础环境和 NGINX Gateway Fabric (使用 Helm)
+
+- name: "检查 Question 9 基础设施是否在 cluster1 上部署"
+  fail:
+    msg: "Question 9 基础设施只能在 cluster1 上部署"
+  when: "'cluster1' not in group_names"
+
+# ==========================================
+# 1. 安装 Helm 客户端
+# ==========================================
+- name: "检查 Helm 是否已安装"
+  shell: |
+    which helm && helm version --short 2>/dev/null || echo "NOT_FOUND"
+  register: helm_check
+  changed_when: false
+
+- name: "解压并安装 Helm"
+  unarchive:
+    src: "{{ offline_packages_path }}/k8s/helm-v3.18.4-linux-amd64.tar.gz"
+    dest: /usr/local/bin/
+    extra_opts: [--strip-components=1]
+    remote_src: yes
+    mode: '0755'
+  when: helm_check.stdout == "NOT_FOUND"
+
+- name: "验证 Helm 安装"
+  shell: |
+    helm version --short
+  register: helm_version
+  changed_when: false
+
+# ==========================================
+# 2. 创建 GatewayClass
+# ==========================================
+- name: "检查 GatewayClass nginx 是否存在"
+  shell: |
+    kubectl get gatewayclass nginx 2>/dev/null || echo "NOT_FOUND"
+  register: gatewayclass_check
+  changed_when: false
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: "创建 GatewayClass nginx"
+  shell: |
+    cat << 'EOF' | kubectl apply -f -
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: GatewayClass
+    metadata:
+      name: nginx
+      labels:
+        app.kubernetes.io/name: nginx-gateway
+        app.kubernetes.io/instance: nginx-gateway
+    spec:
+      controllerName: gateway.nginx.org/nginx-gateway-controller
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: gatewayclass_check.stdout == "NOT_FOUND"
+
+# ==========================================
+# 3. 部署 NGINX Gateway Fabric (使用 Helm OCI)
+# ==========================================
+- name: "检查 NGINX Gateway Fabric 是否已部署"
+  shell: |
+    kubectl get deployment -n nginx-gateway 2>/dev/null | grep -q nginx-gateway && echo "EXISTS" || echo "NOT_FOUND"
+  register: ngf_check
+  changed_when: false
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: "部署 NGINX Gateway Fabric (使用 Helm OCI registry)"
+  shell: |
+    helm install ngf oci://ghcr.io/nginx/charts/nginx-gateway-fabric \
+      --version 2.4.2 \
+      --namespace nginx-gateway \
+      --create-namespace \
+      --set nginx.image.pullPolicy=IfNotPresent \
+      --wait --timeout=3m
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: ngf_check.stdout == "NOT_FOUND"
+  ignore_errors: yes
+
+# ==========================================
+# 4. 创建 Web 应用程序资源
+# ==========================================
+- name: "创建 web Deployment"
+  shell: |
+    cat << 'EOF' | kubectl apply -f -
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: web
+      namespace: default
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: web
+      template:
+        metadata:
+          labels:
+            app: web
+        spec:
+          containers:
+            - name: nginx
+              image: registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm
+              ports:
+                - containerPort: 80
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: "创建 web Service"
+  shell: |
+    cat << 'EOF' | kubectl apply -f -
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: web
+      namespace: default
+    spec:
+      selector:
+        app: web
+      ports:
+        - port: 80
+          targetPort: 80
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: "等待 web Deployment 就绪"
+  shell: |
+    kubectl wait --for=condition=available deployment/web -n default --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+
+# ==========================================
+# 5. 创建 TLS 证书和 Secret
+# ==========================================
+- name: "生成自签名 TLS 证书"
+  shell: |
+    mkdir -p /tmp/gateway-certs
+    # 生成 CA 私钥
+    openssl genrsa -out /tmp/gateway-certs/ca.key 2048 2>/dev/null
+    # 生成 CA 证书
+    openssl req -x509 -new -nodes -key /tmp/gateway-certs/ca.key \
+      -subj "/CN=gateway-ca" -days 365 -out /tmp/gateway-certs/ca.crt 2>/dev/null
+    # 生成服务器私钥
+    openssl genrsa -out /tmp/gateway-certs/tls.key 2048 2>/dev/null
+    # 生成证书签名请求
+    openssl req -new -key /tmp/gateway-certs/tls.key \
+      -subj "/CN=ingress.web.k8s.local" \
+      -addext "subjectAltName=DNS:ingress.web.k8s.local,DNS:gateway.web.k8s.local" \
+      -out /tmp/gateway-certs/tls.csr 2>/dev/null
+    # 生成证书
+    openssl x509 -req -in /tmp/gateway-certs/tls.csr \
+      -CA /tmp/gateway-certs/ca.crt -CAkey /tmp/gateway-certs/ca.key \
+      -CAcreateserial -out /tmp/gateway-certs/tls.crt -days 365 2>/dev/null
+  args:
+    creates: /tmp/gateway-certs/tls.crt
+  ignore_errors: yes
+
+- name: "创建 web-cert Secret"
+  shell: |
+    kubectl create secret tls web-cert \
+      --cert=/tmp/gateway-certs/tls.crt \
+      --key=/tmp/gateway-certs/tls.key \
+      -n default --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+
+# ==========================================
+# 6. 创建现有 Ingress（供考生迁移）
+# ==========================================
+- name: "创建 Ingress web（供考生迁移）"
+  shell: |
+    cat << 'EOF' | kubectl apply -f -
+    apiVersion: networking.k8s.io/v1
+    kind: Ingress
+    metadata:
+      name: web
+      namespace: default
+      annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+    spec:
+      ingressClassName: nginx
+      tls:
+        - hosts:
+            - ingress.web.k8s.local
+          secretName: web-cert
+      rules:
+        - host: ingress.web.k8s.local
+          http:
+            paths:
+              - path: /
+                pathType: Prefix
+                backend:
+                  service:
+                    name: web
+                    port:
+                      number: 80
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: "等待 Ingress 就绪"
+  shell: |
+    kubectl wait --for=jsonpath='{.status.loadBalancer.ingress}' ingress/web -n default --timeout=120s 2>/dev/null || echo "Ingress 可能尚未分配地址"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+
+# ==========================================
+# 7. 添加 hosts 解析
+# ==========================================
+- name: "添加域名解析到 hosts"
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item }}"
+    state: present
+  loop:
+    - "127.0.0.1 ingress.web.k8s.local"
+    - "127.0.0.1 gateway.web.k8s.local"
+
+# ==========================================
+# 8. 显示基础设施信息
+# ==========================================
+- name: "显示 Question 9 基础设施部署完成信息"
+  debug:
+    msg:
+      - "========================================="
+      - "Question 9 基础设施部署完成"
+      - "========================================="
+      - "已部署："
+      - "- GatewayClass: nginx"
+      - "- NGINX Gateway Fabric (Helm OCI 安装, nginx-gateway namespace)"
+      - "- Deployment: web (default namespace)"
+      - "- Service: web:80"
+      - "- Secret: web-cert (TLS 证书)"
+      - "- Ingress: web (主机: ingress.web.k8s.local)"
+      - ""
+      - "Hosts 已添加:"
+      - "127.0.0.1 ingress.web.k8s.local gateway.web.k8s.local"
+      - "========================================="

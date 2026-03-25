@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ question1_deployment | default('apache-server') }}
+  namespace: {{ question1_namespace | default('autoscale') }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: {{ question1_deployment | default('apache-server') }}
+  template:
+    metadata:
+      labels:
+        app: {{ question1_deployment | default('apache-server') }}
+    spec:
+      containers:
+        - name: apache
+          image: {{ question1_image | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm') }}
+          ports:
+            - containerPort: 80
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi

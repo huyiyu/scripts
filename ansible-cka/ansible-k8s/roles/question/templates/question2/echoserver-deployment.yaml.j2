@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: echoserver
+  namespace: {{ question2_namespace | default('sound-repeater') }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: echoserver
+  template:
+    metadata:
+      labels:
+        app: echoserver
+    spec:
+      containers:
+        - name: echoserver
+          image: registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:echoserver
+          ports:
+            - containerPort: 8080

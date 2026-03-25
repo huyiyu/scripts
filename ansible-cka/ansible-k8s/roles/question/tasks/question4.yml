@@ -1,0 +1,22 @@
+---
+# Question 4 | StorageClass
+# 题目：创建 ran-local-path StorageClass，设置为默认
+# 仅在 cluster1 上执行
+
+- name: "检查 Question 4 是否在 cluster1 上运行"
+  fail:
+    msg: "Question 4 只能在 cluster1 上部署"
+  when: "'cluster1' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户（使用统一管理模块，集群级别）
+# ==========================================
+- name: "创建/复用集群级别考生用户"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "cka-system"
+    student_user: "{{ question4_student_user | default('cka-storage') }}"
+    student_home: "{{ question4_student_home | default('/home/cka-storage') }}"
+    is_cluster_level: true
+
+

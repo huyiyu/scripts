@@ -1,23 +1,63 @@
 ---
 # Kubernetes 单节点集群部署主入口
 
+# ==========================================
+# 集群存在性检查（幂等部署）
+# ==========================================
+- name: 检查 Kubernetes 集群是否已存在
+  stat:
+    path: /etc/kubernetes/admin.conf
+  register: k8s_admin_conf
+  changed_when: false
+
+- name: 设置集群存在标志
+  set_fact:
+    k8s_cluster_exists: "{{ k8s_admin_conf.stat.exists }}"
+
+- name: 显示集群状态
+  debug:
+    msg: |
+      Kubernetes 集群状态: {{ '已存在' if k8s_cluster_exists else '未部署' }}
+      force_reset: {{ force_reset | default(false) }}
+      {% if k8s_cluster_exists and not force_reset | default(false) %}
+      跳过 kubernetes role，直接部署题目
+      {% elif k8s_cluster_exists and force_reset | default(false) %}
+      强制重置模式，将重新部署集群
+      {% else %}
+      开始部署 Kubernetes 集群
+      {% endif %}
+
+# ==========================================
+# 以下任务仅在集群不存在或强制重置时执行
+# ==========================================
 - name: 系统准备（基础配置）
   import_tasks: 01-system-prep.yml
+  when: not k8s_cluster_exists or force_reset | default(false) | bool
 
 - name: 同步离线资源
   import_tasks: 02-sync-resources.yml
+  when: not k8s_cluster_exists or force_reset | default(false) | bool
 
 - name: 配置 apt 源并安装基础软件包
   import_tasks: 03-apt-config.yml
+  when: not k8s_cluster_exists or force_reset | default(false) | bool
 
 - name: 安装 Containerd
   import_tasks: 04-containerd.yml
+  when: not k8s_cluster_exists or force_reset | default(false) | bool
 
 - name: 安装 Kubernetes 包
   import_tasks: 05-k8s-packages.yml
+  when: not k8s_cluster_exists or force_reset | default(false) | bool
 
 - name: 导入离线镜像
   import_tasks: 06-offline-images.yml
+  when: not k8s_cluster_exists or force_reset | default(false) | bool
 
 - name: 初始化集群
   import_tasks: 07-cluster-init.yml
+  when: not k8s_cluster_exists or force_reset | default(false) | bool
+
+- name: 显示部署完成信息
+  debug:
+    msg: "Kubernetes 集群部署/检查完成"

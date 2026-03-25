@@ -1,0 +1,55 @@
+---
+# Question 14 | Resources
+# 题目：WordPress 资源调整
+# 仅在 cluster1 上执行
+
+- name: "检查 Question 14 是否在 cluster1 上运行"
+  fail:
+    msg: "Question 14 只能在 cluster1 上部署"
+  when: "'cluster1' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户
+# ==========================================
+- name: "创建/复用考生用户"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "{{ question14_namespace | default('relative-fawn') }}"
+    student_user: "{{ question14_student_user | default('cka000014') }}"
+    student_home: "{{ question14_student_home | default('/home/cka000014') }}"
+
+# ==========================================
+# 2. 创建题目所需的 K8s 资源
+# ==========================================
+- name: "创建临时目录存放 YAML 文件"
+  file:
+    path: "/tmp/question14-manifests"
+    state: directory
+    mode: '0755'
+
+- name: "生成 relative-fawn namespace YAML"
+  template:
+    src: question14/namespace.yaml.j2
+    dest: /tmp/question14-manifests/namespace.yaml
+    mode: '0644'
+
+- name: "生成 WordPress Deployment YAML（过高资源）"
+  template:
+    src: question14/wordpress-deployment.yaml.j2
+    dest: /tmp/question14-manifests/wordpress-deployment.yaml
+    mode: '0644'
+
+- name: "应用 YAML 文件"
+  shell: kubectl apply -f /tmp/question14-manifests/
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: apply_result
+  changed_when: "'created' in apply_result.stdout or 'configured' in apply_result.stdout"
+
+# ==========================================
+# 3. 清理临时文件
+# ==========================================
+- name: "清理临时文件"
+  file:
+    path: /tmp/question14-manifests
+    state: absent

@@ -1,0 +1,22 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+  namespace: {{ question9_namespace | default('default') }}
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - ingress.web.k8s.local
+      secretName: web-cert
+  rules:
+    - host: ingress.web.k8s.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: web
+                port:
+                  number: 80

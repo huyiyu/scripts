@@ -1,0 +1,96 @@
+---
+# Question 8 | PVC
+# 题目：创建 PVC 并恢复 MariaDB Deployment
+# 仅在 cluster1 上执行
+
+- name: "检查 Question 8 是否在 cluster1 上运行"
+  fail:
+    msg: "Question 8 只能在 cluster1 上部署"
+  when: "'cluster1' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户（使用统一管理模块）
+# ==========================================
+- name: "创建/复用考生用户"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "{{ question8_namespace | default('mariadb') }}"
+    student_user: "{{ question8_student_user | default('cka-mariadb') }}"
+    student_home: "{{ question8_student_home | default('/home/cka-mariadb') }}"
+
+# ==========================================
+# 2. 创建题目所需的 K8s 资源
+# ==========================================
+- name: "创建临时目录存放 YAML 文件"
+  file:
+    path: "/tmp/question8-manifests"
+    state: directory
+    mode: '0755'
+
+- name: "生成 PersistentVolume YAML"
+  template:
+    src: question8/mariadb-pv.yaml.j2
+    dest: /tmp/question8-manifests/mariadb-pv.yaml
+    mode: '0644'
+
+- name: "应用 PV YAML 文件"
+  shell: kubectl apply -f /tmp/question8-manifests/mariadb-pv.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: apply_result
+  changed_when: "'created' in apply_result.stdout or 'configured' in apply_result.stdout"
+  ignore_errors: yes
+
+- name: "确保 PV 目录存在"
+  file:
+    path: /opt/local-path-provisioner/pv-mariadb
+    state: directory
+    mode: '0755'
+
+- name: "复制 MariaDB Deployment 模板到考生 home 目录"
+  copy:
+    content: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: mariadb
+        namespace: {{ question8_namespace | default('mariadb') }}
+        labels:
+          app: mariadb
+      spec:
+        replicas: 1
+        selector:
+          matchLabels:
+            app: mariadb
+        template:
+          metadata:
+            labels:
+              app: mariadb
+          spec:
+            containers:
+              - name: busybox
+                image: {{ question8_image | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28') }}
+                imagePullPolicy: IfNotPresent
+                args:
+                  - /bin/sh
+                  - -c
+                  - |
+                    i=0; while true; do
+                      i=$((i+1));
+                      sleep 5;
+                    done
+                # TODO: 考生需要添加 volumeMounts 部分
+                # volumeMounts:
+                # - name: mariadb-data
+                #   mountPath: /var/log
+            # TODO: 考生需要添加 volumes 部分
+            # volumes:
+            # - name: mariadb-data
+            #   persistentVolumeClaim:
+            #     claimName: mariadb
+    dest: "{{ question8_student_home | default('/home/cka-mariadb') }}/mariadb-deployment.yaml"
+    owner: "{{ question8_student_user | default('cka-mariadb') }}"
+    group: "{{ question8_student_user | default('cka-mariadb') }}"
+    mode: '0644'
+
+

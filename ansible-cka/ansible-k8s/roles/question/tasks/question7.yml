@@ -1,0 +1,45 @@
+---
+# Question 7 | Helm ArgoCD
+# 题目：使用 Helm 安装 Argo CD 7.7.3
+# 仅在 cluster1 上执行
+
+- name: "检查 Question 7 是否在 cluster1 上运行"
+  fail:
+    msg: "Question 7 只能在 cluster1 上部署"
+  when: "'cluster1' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户（使用统一管理模块）
+# ==========================================
+- name: "创建/复用考生用户"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "{{ question7_namespace | default('argocd') }}"
+    student_user: "{{ question7_student_user | default('cka-argocd') }}"
+    student_home: "{{ question7_student_home | default('/home/cka-argocd') }}"
+
+# ==========================================
+# 2. 安装 Helm 到系统目录
+# ==========================================
+- name: "检查 Helm 是否已安装"
+  stat:
+    path: "/usr/local/bin/helm"
+  register: helm_installed
+
+- name: "解压并安装 Helm"
+  shell: |
+    cd /tmp
+    tar -xzf {{ offline_packages_path }}/k8s/helm-v3.18.4-linux-amd64.tar.gz
+    cp linux-amd64/helm /usr/local/bin/helm
+    chmod +x /usr/local/bin/helm
+    rm -rf linux-amd64
+  when: not helm_installed.stat.exists
+  ignore_errors: yes
+
+- name: "验证 Helm 安装"
+  shell: |
+    helm version --short
+  register: helm_version
+  changed_when: false
+
+

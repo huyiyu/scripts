@@ -1,0 +1,30 @@
+---
+# Question 13 | Calico Network Policy
+# 题目：在 cluster2 的 calico-netpol 命名空间配置 Calico 网络策略
+# Calico 已在 base 角色中安装，这里只需创建考生用户和命名空间
+# Pod 由学生自行创建进行练习
+
+- name: "检查 Question 13 是否在 cluster2 上运行"
+  fail:
+    msg: "Question 13 只能在 cluster2 上部署"
+  when: "'cluster2' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户和命名空间（需要 cluster-admin 权限安装 Calico）
+# ==========================================
+- name: "创建/复用考生用户（集群管理员权限）"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "{{ question13_namespace | default('calico-netpol') }}"
+    student_user: "{{ question13_student_user | default('cka000013') }}"
+    student_home: "{{ question13_student_home | default('/home/cka000013') }}"
+    is_cluster_level: true
+
+- name: "授予 cluster-admin 权限（安装 Calico 需要）"
+  shell: |
+    kubectl create clusterrolebinding {{ question13_student_user | default('cka000013') }}-admin \
+      --clusterrole=cluster-admin \
+      --serviceaccount={{ question13_namespace | default('calico-netpol') }}:{{ question13_student_user | default('cka000013') }} \
+      --dry-run=client -o yaml | kubectl apply -f -
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf

@@ -1,0 +1,51 @@
+---
+# Question 6 | PriorityClass
+# 题目：创建 PriorityClass high-priority，修改 busybox-logger Deployment 使用它
+# 仅在 cluster1 上执行
+
+- name: "检查 Question 6 是否在 cluster1 上运行"
+  fail:
+    msg: "Question 6 只能在 cluster1 上部署"
+  when: "'cluster1' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户（使用统一管理模块）
+# ==========================================
+- name: "创建/复用考生用户"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "{{ question6_namespace | default('priority') }}"
+    student_user: "{{ question6_student_user | default('cka-priority') }}"
+    student_home: "{{ question6_student_home | default('/home/cka-priority') }}"
+
+# ==========================================
+# 2. 创建题目所需的 K8s 资源
+# ==========================================
+- name: "创建临时目录存放 YAML 文件"
+  file:
+    path: "/tmp/question6-manifests"
+    state: directory
+    mode: '0755'
+
+- name: "生成 busybox-logger Deployment YAML"
+  template:
+    src: question6/busybox-logger-deployment.yaml.j2
+    dest: /tmp/question6-manifests/busybox-logger-deployment.yaml
+    mode: '0644'
+
+- name: "应用 YAML 文件"
+  shell: kubectl apply -f /tmp/question6-manifests/
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: apply_result
+  changed_when: "'created' in apply_result.stdout or 'configured' in apply_result.stdout"
+
+- name: "等待 busybox-logger Deployment 就绪"
+  shell: |
+    kubectl wait --for=condition=available deployment/busybox-logger -n {{ question6_namespace | default('priority') }} --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+
+

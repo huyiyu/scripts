@@ -1,0 +1,126 @@
+---
+# Question 10 | NetworkPolicy
+# 题目：从提供的 YAML 样本中查看并应用适当的 NetworkPolicy
+# 仅在 cluster1 上执行
+
+- name: "检查 Question 10 是否在 cluster1 上运行"
+  fail:
+    msg: "Question 10 只能在 cluster1 上部署"
+  when: "'cluster1' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户（使用统一管理模块，支持两个 namespace）
+# ==========================================
+- name: "创建/复用考生用户"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "{{ question10_primary_namespace | default('frontend') }}"
+    student_user: "{{ question10_student_user | default('cka000031') }}"
+    student_home: "{{ question10_student_home | default('/home/cka000031') }}"
+    additional_namespaces:
+      - "{{ question10_secondary_namespace | default('backend') }}"
+
+# ==========================================
+# 2. 创建题目所需的 K8s 资源
+# ==========================================
+- name: "创建临时目录存放 YAML 文件"
+  file:
+    path: "/tmp/question10-manifests"
+    state: directory
+    mode: '0755'
+
+- name: "生成 frontend Deployment YAML"
+  template:
+    src: question10/frontend-deployment.yaml.j2
+    dest: /tmp/question10-manifests/frontend-deployment.yaml
+    mode: '0644'
+
+- name: "生成 frontend Service YAML"
+  template:
+    src: question10/frontend-service.yaml.j2
+    dest: /tmp/question10-manifests/frontend-service.yaml
+    mode: '0644'
+
+- name: "生成 backend Deployment YAML"
+  template:
+    src: question10/backend-deployment.yaml.j2
+    dest: /tmp/question10-manifests/backend-deployment.yaml
+    mode: '0644'
+
+- name: "生成 backend Service YAML"
+  template:
+    src: question10/backend-service.yaml.j2
+    dest: /tmp/question10-manifests/backend-service.yaml
+    mode: '0644'
+
+- name: "应用 YAML 文件创建资源（幂等）"
+  shell: |
+    kubectl apply -f /tmp/question10-manifests/frontend-deployment.yaml
+    kubectl apply -f /tmp/question10-manifests/frontend-service.yaml
+    kubectl apply -f /tmp/question10-manifests/backend-deployment.yaml
+    kubectl apply -f /tmp/question10-manifests/backend-service.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: apply_result
+  changed_when: "'created' in apply_result.stdout or 'configured' in apply_result.stdout"
+
+- name: "等待 frontend Deployment 就绪"
+  shell: |
+    kubectl wait --for=condition=available deployment/frontend \
+      -n {{ question10_primary_namespace | default('frontend') }} --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+
+- name: "等待 backend Deployment 就绪"
+  shell: |
+    kubectl wait --for=condition=available deployment/backend \
+      -n {{ question10_secondary_namespace | default('backend') }} --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+
+# ==========================================
+# 3. 创建 NetworkPolicy 示例文件到用户目录
+# ==========================================
+- name: "创建 netpol 目录"
+  file:
+    path: "{{ question10_student_home | default('/home/cka000031') }}/netpol"
+    state: directory
+    owner: "{{ question10_student_user | default('cka000031') }}"
+    group: "{{ question10_student_user | default('cka000031') }}"
+    mode: '0755'
+
+- name: "生成 netpol1.yaml（过于宽松）"
+  template:
+    src: question10/netpol1.yaml.j2
+    dest: "{{ question10_student_home | default('/home/cka000031') }}/netpol/netpol1.yaml"
+    owner: "{{ question10_student_user | default('cka000031') }}"
+    group: "{{ question10_student_user | default('cka000031') }}"
+    mode: '0644'
+
+- name: "生成 netpol2.yaml（正确答案）"
+  template:
+    src: question10/netpol2.yaml.j2
+    dest: "{{ question10_student_home | default('/home/cka000031') }}/netpol/netpol2.yaml"
+    owner: "{{ question10_student_user | default('cka000031') }}"
+    group: "{{ question10_student_user | default('cka000031') }}"
+    mode: '0644'
+
+- name: "生成 netpol3.yaml（不符合要求）"
+  template:
+    src: question10/netpol3.yaml.j2
+    dest: "{{ question10_student_home | default('/home/cka000031') }}/netpol/netpol3.yaml"
+    owner: "{{ question10_student_user | default('cka000031') }}"
+    group: "{{ question10_student_user | default('cka000031') }}"
+    mode: '0644'
+
+# ==========================================
+# 4. 清理临时文件
+# ==========================================
+- name: "清理临时 YAML 文件"
+  file:
+    path: /tmp/question10-manifests
+    state: absent

@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: synergy-leverager
+  namespace: {{ question3_namespace | default('default') }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: synergy-leverager
+  template:
+    metadata:
+      labels:
+        app: synergy-leverager
+    spec:
+      containers:
+        - name: synergy-leverager
+          image: registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox-unstable
+          args:
+            - /bin/sh
+            - -c
+            - |
+              i=0; while true; do
+                echo "$$(date) INFO $$i" >> /var/log/synergy-leverager.log;
+                i=$$((i+1));
+                sleep 5;
+              done
+          # 注意：当前容器尝试写入 /var/log/synergy-leverager.log
+          # 考生需要添加 Volume 和 volumeMounts 使日志可共享

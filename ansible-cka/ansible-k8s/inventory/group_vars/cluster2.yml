@@ -1,3 +1,14 @@
 ---
-# cluster2 特定配置
+# Cluster2 专用配置
+# 部署规则：Question 13 在 cluster2
+
+# ==========================================
+# Question 13 配置 (calico-netpol namespace)
+# ==========================================
+question13_enabled: true
+question13_student_user: "cka000013"
+question13_student_home: "/home/cka000013"
+question13_namespace: "calico-netpol"
+
+# CNI 配置
 cni_enabled: false

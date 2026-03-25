@@ -1,0 +1,72 @@
+# Calico CNI 安装指南
+
+## 题目要求
+在 cluster2 上安装 Calico CNI。
+
+## Calico 简介
+Calico 是一个开源的容器网络和网络安全解决方案，为 Kubernetes 提供:
+- 高性能的 L3 网络
+- 网络策略 (Network Policy) 支持
+- 灵活的网络配置
+
+## 安装步骤
+
+### 1. 检查现有 CNI 状态
+```bash
+kubectl get pods -n kube-system
+kubectl get nodes -o wide
+```
+
+### 2. 下载 Calico 清单文件
+```bash
+# 下载 Calico 官方安装文件
+curl https://raw.githubusercontent.com/projectcalico/calico/v3.26.1/manifests/calico.yaml -O
+
+# 或者使用国内镜像
+wget https://docs.projectcalico.org/manifests/calico.yaml
+```
+
+### 3. 修改配置（如需要）
+编辑 `calico.yaml` 文件，根据环境修改以下参数:
+- `CALICO_IPV4POOL_CIDR`: Pod CIDR（需与集群配置一致）
+- `CALICO_IPV4POOL_IPIP`: 是否启用 IPIP 隧道
+
+### 4. 应用 Calico
+```bash
+kubectl apply -f calico.yaml
+```
+
+### 5. 验证安装
+```bash
+# 查看 Calico Pod 状态
+kubectl get pods -n kube-system -l k8s-app=calico-node
+
+# 等待所有 Pod 变为 Running 状态
+kubectl wait --for=condition=ready pod -l k8s-app=calico-node -n kube-system --timeout=120s
+
+# 验证节点状态
+kubectl get nodes
+```
+
+## 故障排查
+
+### 检查 Calico Pod 日志
+```bash
+kubectl logs -n kube-system -l k8s-app=calico-node
+```
+
+### 检查 CNI 配置
+```bash
+# 在节点上执行
+ls /etc/cni/net.d/
+cat /etc/cni/net.d/10-calico.conflist
+```
+
+### 检查 IP 池
+```bash
+kubectl get ippools
+```
+
+## 参考
+- [Calico 官方文档](https://docs.projectcalico.org/)
+- [Kubernetes 网络插件](https://kubernetes.io/docs/concepts/cluster-administration/networking/)

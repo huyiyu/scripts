@@ -30,10 +30,16 @@
   loop: "{{ sysctl_params | dict2items }}"
 
 # ==========================================
-# 3. 禁用 Swap
+# 3. 禁用 Swap（幂等方式）
 # ==========================================
+- name: 检查 swap 状态
+  command: cat /proc/swaps
+  register: swap_status
+  changed_when: false
+
 - name: 立即禁用 swap
   command: swapoff -a
+  when: swap_status.stdout_lines | length > 1
   changed_when: true
 
 - name: 从 /etc/fstab 中移除 swap 配置
@@ -50,17 +56,7 @@
     name: "{{ timezone }}"
 
 # ==========================================
-# 5. 禁用防火墙
-# ==========================================
-- name: 禁用 UFW 防火墙
-  systemd:
-    name: ufw
-    state: stopped
-    enabled: no
-  ignore_errors: yes
-
-# ==========================================
-# 6. 配置 hosts 文件
+# 5. 配置 hosts 文件
 # ==========================================
 - name: 添加 hosts 条目
   lineinfile:

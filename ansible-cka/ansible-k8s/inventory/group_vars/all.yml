@@ -10,7 +10,7 @@ k8s_version: "1.34.3"
 kubernetes_version_full: "v{{ k8s_version }}"
 
 # 集群网络配置
-pod_network_cidr: "10.244.0.0/16"
+pod_network_cidr: "192.168.0.0/16"  # Calico 默认 CIDR，方便学生答题
 service_cidr: "10.96.0.0/12"
 
 # ------------------------------------------
@@ -58,6 +58,7 @@ calico_operator_manifest: "tigera-operator.yaml"
 calico_custom_resources: "custom-resources.yaml"
 k8s_images_package: "k8s-images-v{{ k8s_version }}.tar"
 calico_images_package: "calico-images-{{ calico_version }}.tar"
+cka_images_package: "cka-images.tar"
 
 # ------------------------------------------
 # Kubernetes 镜像列表
@@ -87,6 +88,22 @@ calico_images:
   - "quay.io/calico/node-driver-registrar:{{ calico_version }}"
   # FlexVolume 驱动
   - "quay.io/calico/pod2daemon-flexvol:{{ calico_version }}"
+
+# ------------------------------------------
+# CKA 题目镜像列表
+# ------------------------------------------
+cka_images:
+  - "docker.io/traefik:v2.10.7"
+  - "rancher/local-path-provisioner:v0.0.24"
+  - "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox-unstable"
+  - "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:echoserver"
+  - "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+  # ArgoCD 7.7.3 所需镜像
+  - "quay.io/argoproj/argocd:v2.13.0"
+  - "ghcr.io/dexidp/dex:v2.41.1"
+  - "public.ecr.aws/docker/library/redis:7.4.1-alpine"
+  # NGINX Gateway Fabric (Gateway API Controller)
+  - "ghcr.io/nginx/nginx-gateway-fabric:2.2.1"
 
 # ------------------------------------------
 # 部署用户配置（使用 root 直接部署）

@@ -1,0 +1,344 @@
+---
+# 统一管理学生用户创建和 RBAC 配置
+# 参数：
+#   - student_namespace: 用户主 namespace（必填）
+#   - student_user: 用户名（可选，默认自动生成）
+#   - student_home: 用户主目录（可选）
+#   - additional_namespaces: 额外可访问的 namespace 列表（可选，用于 Q10）
+#   - is_cluster_level: 是否为集群级别用户（可选，默认 false）
+
+- name: "验证必需的参数"
+  fail:
+    msg: "student_namespace 参数是必需的"
+  when: student_namespace is not defined or student_namespace == ""
+
+- name: "设置默认值"
+  set_fact:
+    _student_user: "{{ student_user }}"
+    _student_home: "{{ student_home }}"
+    _additional_ns: "{{ additional_namespaces | default([]) }}"
+    _is_cluster_level: "{{ is_cluster_level | default(false) | bool }}"
+
+# ==========================================
+# 1. 创建系统用户
+# ==========================================
+- name: "创建 {{ _student_user }} 系统用户"
+  user:
+    name: "{{ _student_user }}"
+    state: present
+    create_home: yes
+    shell: /bin/bash
+
+- name: "创建 .kube 目录"
+  file:
+    path: "{{ _student_home }}/.kube"
+    state: directory
+    owner: "{{ _student_user }}"
+    group: "{{ _student_user }}"
+    mode: '0755'
+
+# ==========================================
+# 2. 创建 Namespace(s) 和 ServiceAccount
+# ==========================================
+- name: "创建 {{ student_namespace }} namespace"
+  shell: |
+    kubectl get namespace {{ student_namespace }} 2>/dev/null || \
+    kubectl create namespace {{ student_namespace }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: ns_result
+  changed_when: "'created' in ns_result.stdout"
+
+- name: "创建额外 namespace"
+  shell: |
+    kubectl get namespace {{ item }} 2>/dev/null || \
+    kubectl create namespace {{ item }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: ns_extra_result
+  changed_when: "'created' in ns_extra_result.stdout"
+  loop: "{{ _additional_ns }}"
+
+- name: "创建 ServiceAccount {{ _student_user }}"
+  shell: |
+    kubectl get serviceaccount {{ _student_user }} -n {{ student_namespace }} 2>/dev/null || \
+    kubectl create serviceaccount {{ _student_user }} -n {{ student_namespace }}
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: sa_result
+  changed_when: "'created' in sa_result.stdout"
+
+# ==========================================
+# 3. 创建 RBAC 资源
+# ==========================================
+
+# ----- 集群级别用户权限 -----
+- name: "创建 ClusterRole（集群级别权限）"
+  shell: |
+    cat <<EOF | kubectl apply -f -
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: {{ _student_user }}-cluster-role
+    rules:
+    - apiGroups: [""]
+      resources: ["nodes", "namespaces", "pods", "services", "configmaps", "secrets"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["storageclasses"]
+      verbs: ["*"]
+    - apiGroups: ["scheduling.k8s.io"]
+      resources: ["priorityclasses"]
+      verbs: ["*"]
+    - apiGroups: ["apiextensions.k8s.io"]
+      resources: ["customresourcedefinitions"]
+      verbs: ["get", "list", "watch"]
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: cluster_role_result
+  changed_when: "'created' in cluster_role_result.stdout or 'configured' in cluster_role_result.stdout"
+  when: _is_cluster_level | bool
+
+- name: "创建 ClusterRoleBinding（集群级别）"
+  shell: |
+    cat <<EOF | kubectl apply -f -
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: {{ _student_user }}-cluster-binding
+    subjects:
+    - kind: ServiceAccount
+      name: {{ _student_user }}
+      namespace: {{ student_namespace }}
+    roleRef:
+      kind: ClusterRole
+      name: {{ _student_user }}-cluster-role
+      apiGroup: rbac.authorization.k8s.io
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: cluster_binding_result
+  changed_when: "'created' in cluster_binding_result.stdout or 'configured' in cluster_binding_result.stdout"
+  when: _is_cluster_level | bool
+
+# ----- Namespace 级别用户权限 -----
+- name: "创建 Role（主 namespace）"
+  shell: |
+    cat <<EOF | kubectl apply -f -
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: {{ _student_user }}-role
+      namespace: {{ student_namespace }}
+    rules:
+    - apiGroups: [""]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["apps"]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["networking.k8s.io"]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["autoscaling"]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["batch"]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["policy"]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["storageclasses"]
+      verbs: ["get", "list", "watch"]
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: role_result
+  changed_when: "'created' in role_result.stdout or 'configured' in role_result.stdout"
+  when: not (_is_cluster_level | bool)
+
+- name: "创建 RoleBinding（主 namespace）"
+  shell: |
+    cat <<EOF | kubectl apply -f -
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: {{ _student_user }}-binding
+      namespace: {{ student_namespace }}
+    subjects:
+    - kind: ServiceAccount
+      name: {{ _student_user }}
+      namespace: {{ student_namespace }}
+    roleRef:
+      kind: Role
+      name: {{ _student_user }}-role
+      apiGroup: rbac.authorization.k8s.io
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: binding_result
+  changed_when: "'created' in binding_result.stdout or 'configured' in binding_result.stdout"
+  when: not (_is_cluster_level | bool)
+
+# ----- 额外 namespace 权限 -----
+- name: "创建 Role（额外 namespace）"
+  shell: |
+    cat <<EOF | kubectl apply -f -
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: Role
+    metadata:
+      name: {{ _student_user }}-role
+      namespace: {{ item }}
+    rules:
+    - apiGroups: [""]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["apps"]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["networking.k8s.io"]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["autoscaling"]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["batch"]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["policy"]
+      resources: ["*"]
+      verbs: ["*"]
+    - apiGroups: ["storage.k8s.io"]
+      resources: ["storageclasses"]
+      verbs: ["get", "list", "watch"]
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: role_extra_result
+  changed_when: "'created' in role_extra_result.stdout or 'configured' in role_extra_result.stdout"
+  when: not (_is_cluster_level | bool)
+  loop: "{{ _additional_ns }}"
+
+- name: "创建 RoleBinding（额外 namespace）"
+  shell: |
+    cat <<EOF | kubectl apply -f -
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: RoleBinding
+    metadata:
+      name: {{ _student_user }}-binding
+      namespace: {{ item }}
+    subjects:
+    - kind: ServiceAccount
+      name: {{ _student_user }}
+      namespace: {{ student_namespace }}
+    roleRef:
+      kind: Role
+      name: {{ _student_user }}-role
+      apiGroup: rbac.authorization.k8s.io
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: binding_extra_result
+  changed_when: "'created' in binding_extra_result.stdout or 'configured' in binding_extra_result.stdout"
+  when: not (_is_cluster_level | bool)
+  loop: "{{ _additional_ns }}"
+
+# ==========================================
+# 4. 生成受限的 kubeconfig 文件
+# ==========================================
+- name: "获取 ServiceAccount Token"
+  shell: |
+    kubectl create token {{ _student_user }} -n {{ student_namespace }} --duration=8760h
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: token_result
+  changed_when: false
+
+- name: "获取集群 CA"
+  shell: |
+    kubectl config view --raw -o jsonpath='{.clusters[0].cluster.certificate-authority-data}' | base64 -d
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: ca_result
+  changed_when: false
+
+- name: "获取 API Server 地址"
+  shell: |
+    kubectl config view --raw -o jsonpath='{.clusters[0].cluster.server}'
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: server_result
+  changed_when: false
+
+- name: "生成 kubeconfig 文件"
+  copy:
+    dest: "{{ _student_home }}/.kube/config"
+    owner: "{{ _student_user }}"
+    group: "{{ _student_user }}"
+    mode: '0600'
+    content: |
+      apiVersion: v1
+      kind: Config
+      clusters:
+      - name: kubernetes
+        cluster:
+          certificate-authority-data: {{ ca_result.stdout | b64encode }}
+          server: {{ server_result.stdout }}
+      contexts:
+      - name: {{ _student_user }}@kubernetes
+        context:
+          cluster: kubernetes
+          namespace: {{ student_namespace }}
+          user: {{ _student_user }}
+      current-context: {{ _student_user }}@kubernetes
+      users:
+      - name: {{ _student_user }}
+        user:
+          token: {{ token_result.stdout }}
+
+- name: "设置 KUBECONFIG 环境变量"
+  lineinfile:
+    path: "{{ _student_home }}/.bashrc"
+    line: "export KUBECONFIG={{ _student_home }}/.kube/config"
+    create: yes
+
+- name: "设置默认 namespace 别名"
+  lineinfile:
+    path: "{{ _student_home }}/.bashrc"
+    line: "alias kubectl='kubectl -n {{ student_namespace }}'"
+    create: yes
+
+- name: "确保 .kube 目录存在"
+  file:
+    path: "{{ _student_home }}/.kube"
+    state: directory
+    owner: "{{ _student_user }}"
+    group: "{{ _student_user }}"
+    mode: '0755'
+
+- name: "清理旧的个人 kubectl 补全配置"
+  lineinfile:
+    path: "{{ _student_home }}/.bashrc"
+    line: "source <(kubectl completion bash)"
+    state: absent
+
+- name: "清理旧的个人补全脚本加载"
+  lineinfile:
+    path: "{{ _student_home }}/.bashrc"
+    regexp: "source.*kubectl-completion.sh"
+    state: absent
+
+- name: "清理旧的 k 别名补全"
+  lineinfile:
+    path: "{{ _student_home }}/.bashrc"
+    regexp: "complete.*__start_kubectl k"
+    state: absent
+
+- name: "设置 k 别名（系统级配置已包含，此处为冗余确保）"
+  lineinfile:
+    path: "{{ _student_home }}/.bashrc"
+    line: "alias k=kubectl"
+    create: yes

@@ -1,0 +1,116 @@
+# cri-dockerd 安装指南
+
+## 题目要求
+安装 cri-dockerd 并配置系统参数。
+
+## 前置条件
+- Docker 已安装并运行
+- 系统内核版本 >= 3.10
+- Kubernetes 集群准备中
+
+## 安装步骤
+
+### 1. 安装依赖
+```bash
+sudo apt-get update
+sudo apt-get install -y apt-transport-https ca-certificates curl gnupg lsb-release
+```
+
+### 2. 下载 cri-dockerd
+```bash
+# 设置版本号
+CRI_DOCKERD_VERSION=0.3.9
+
+# 下载 deb 包
+wget https://github.com/Mirantis/cri-dockerd/releases/download/v${CRI_DOCKERD_VERSION}/cri-dockerd_${CRI_DOCKERD_VERSION}.3-0.ubuntu-$(lsb_release -cs)_amd64.deb
+
+# 安装
+sudo dpkg -i cri-dockerd_${CRI_DOCKERD_VERSION}.3-0.ubuntu-$(lsb_release -cs)_amd64.deb
+```
+
+### 3. 配置 systemd 服务
+将 `cri-dockerd.service` 文件复制到 `/etc/systemd/system/`:
+```bash
+sudo cp cri-dockerd.service /etc/systemd/system/
+sudo systemctl daemon-reload
+```
+
+### 4. 启动 cri-dockerd
+```bash
+sudo systemctl enable cri-dockerd
+sudo systemctl start cri-dockerd
+sudo systemctl status cri-dockerd
+```
+
+### 5. 验证安装
+```bash
+# 检查 socket 文件
+ls -la /var/run/cri-dockerd.sock
+
+# 检查 cri-dockerd 版本
+/usr/bin/cri-dockerd --version
+```
+
+## 配置系统参数
+
+### 1. 加载内核模块
+```bash
+sudo modprobe overlay
+sudo modprobe br_netfilter
+
+# 确保开机自动加载
+cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
+overlay
+br_netfilter
+EOF
+```
+
+### 2. 配置 sysctl 参数
+将 `k8s-sysctl.conf` 文件复制到 `/etc/sysctl.d/`:
+```bash
+sudo cp k8s-sysctl.conf /etc/sysctl.d/99-k8s.conf
+
+# 应用配置
+sudo sysctl --system
+```
+
+### 3. 验证 sysctl 配置
+```bash
+# 检查 IP 转发
+sysctl net.ipv4.ip_forward
+sysctl net.bridge.bridge-nf-call-iptables
+```
+
+## 配置 kubelet 使用 cri-dockerd
+
+### 1. 修改 kubelet 配置
+编辑 `/var/lib/kubelet/kubeadm-flags.env`:
+```bash
+KUBELET_KUBEADM_ARGS="--container-runtime=remote --container-runtime-endpoint=unix:///var/run/cri-dockerd.sock --pod-infra-container-image=registry.k8s.io/pause:3.9"
+```
+
+### 2. 重启 kubelet
+```bash
+sudo systemctl restart kubelet
+```
+
+## 故障排查
+
+### 检查 cri-dockerd 状态
+```bash
+sudo journalctl -u cri-dockerd -f
+```
+
+### 检查 socket 连接
+```bash
+crictl --runtime-endpoint unix:///var/run/cri-dockerd.sock ps
+```
+
+### 常见问题
+1. **socket 文件不存在**: 检查 cri-dockerd 服务是否正常运行
+2. **权限问题**: 确保当前用户有权限访问 docker socket
+3. **网络插件错误**: 确保 CNI 插件已安装
+
+## 参考
+- [cri-dockerd GitHub](https://github.com/Mirantis/cri-dockerd)
+- [Kubernetes CRI](https://kubernetes.io/docs/concepts/architecture/cri/)

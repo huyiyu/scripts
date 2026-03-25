@@ -1,0 +1,97 @@
+---
+# Question role - CKA 考试题目部署
+# 部署规则：
+#   - cluster1: Q01-Q12
+#   - cluster2: Q13-Q14
+#   - cluster3: Q15-Q16
+# 每个题目文件内部会检查当前节点所属的集群组
+
+# ==========================================
+# 初始化 CKA 环境（生成 SSH 密钥并分发）
+# ==========================================
+- name: 导入初始化任务（生成 SSH 密钥）
+  import_tasks: init_cka_env.yml
+  when: init_cka_env | default(false) | bool
+
+# ==========================================
+# 统一清理（可选）
+# ==========================================
+- name: 导入清理任务
+  import_tasks: cleanup.yml
+  when: question_cleanup | default(false) | bool
+
+- name: 导入 Question 2 基础设施 (Traefik Ingress Controller)
+  import_tasks: question2-infra.yml
+  when: question2_enabled | default(false) | bool
+
+- name: 导入 Question 4 基础设施 (local-path-provisioner)
+  import_tasks: question4-infra.yml
+  when: question4_enabled | default(false) | bool
+
+- name: 导入 Question 9 基础设施 (Gateway API 基础环境)
+  import_tasks: question9-infra.yml
+  when: question9_enabled | default(false) | bool
+
+- name: 导入 Question 1 - HPA autoscale
+  import_tasks: question1.yml
+  when: question1_enabled | default(false) | bool
+
+- name: 导入 Question 2 - Ingress
+  import_tasks: question2.yml
+  when: question2_enabled | default(false) | bool
+
+- name: 导入 Question 3 - Sidecar
+  import_tasks: question3.yml
+  when: question3_enabled | default(false) | bool
+
+- name: 导入 Question 4 - StorageClass
+  import_tasks: question4.yml
+  when: question4_enabled | default(false) | bool
+
+- name: 导入 Question 5 - Service
+  import_tasks: question5.yml
+  when: question5_enabled | default(false) | bool
+
+- name: 导入 Question 6 - PriorityClass
+  import_tasks: question6.yml
+  when: question6_enabled | default(false) | bool
+
+- name: 导入 Question 7 - Helm ArgoCD
+  import_tasks: question7.yml
+  when: question7_enabled | default(false) | bool
+
+- name: 导入 Question 8 - PVC
+  import_tasks: question8.yml
+  when: question8_enabled | default(false) | bool
+
+- name: 导入 Question 9 - Gateway
+  import_tasks: question9.yml
+  when: question9_enabled | default(false) | bool
+
+- name: 导入 Question 10 - NetworkPolicy
+  import_tasks: question10.yml
+  when: question10_enabled | default(false) | bool
+
+- name: 导入 Question 11 - CRD
+  import_tasks: question11.yml
+  when: question11_enabled | default(false) | bool
+
+- name: 导入 Question 12 - ConfigMap
+  import_tasks: question12.yml
+  when: question12_enabled | default(false) | bool
+
+- name: 导入 Question 13 - Calico
+  import_tasks: question13.yml
+  when: question13_enabled | default(false) | bool
+
+- name: 导入 Question 14 - Resources
+  import_tasks: question14.yml
+  when: question14_enabled | default(false) | bool
+
+- name: 导入 Question 15 - etcd
+  import_tasks: question15.yml
+  when: question15_enabled | default(false) | bool
+
+- name: 导入 Question 16 - cri-dockerd
+  import_tasks: question16.yml
+  when: question16_enabled | default(false) | bool

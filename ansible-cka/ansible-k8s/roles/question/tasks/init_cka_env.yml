@@ -1,0 +1,96 @@
+---
+# 初始化 CKA 考试环境
+# 1. 生成 ed25519 SSH 密钥对
+# 2. 将公钥分发到所有 CKA 用户
+# 注意：私钥和 SSH config 显示在 show_ssh_info.yml 中最后执行
+
+# ==========================================
+# 1. 生成 ed25519 SSH 密钥对（在控制节点上）
+# ==========================================
+- name: "检查是否已存在 CKA SSH 密钥"
+  stat:
+    path: /root/.ssh/cka_ed25519
+  register: cka_key_stat
+  delegate_to: localhost
+  become: yes
+  run_once: true
+
+- name: "生成 ed25519 SSH 密钥对"
+  shell: |
+    ssh-keygen -t ed25519 -f /root/.ssh/cka_ed25519 -N "" -C "cka-exam-key"
+  args:
+    creates: /root/.ssh/cka_ed25519
+  delegate_to: localhost
+  become: yes
+  run_once: true
+  when: not cka_key_stat.stat.exists
+
+- name: "读取公钥内容"
+  slurp:
+    src: /root/.ssh/cka_ed25519.pub
+  register: cka_public_key
+  delegate_to: localhost
+  become: yes
+  run_once: true
+
+- name: "设置公钥变量"
+  set_fact:
+    cka_ssh_public_key: "{{ cka_public_key.content | b64decode | trim }}"
+  run_once: true
+
+# ==========================================
+# 2. 将公钥添加到所有 CKA 用户
+# ==========================================
+- name: "确保 CKA 用户 .ssh 目录存在"
+  file:
+    path: "/home/{{ item }}/.ssh"
+    state: directory
+    owner: "{{ item }}"
+    group: "{{ item }}"
+    mode: '0700'
+  loop:
+    - cka000050
+    - cka000024
+    - cka000037
+    - cka000046
+    - cka000025
+    - cka000049
+    - cka000060
+    - cka000023
+    - cka000029
+    - cka000031
+    - cka000011
+    - cka000012
+    - cka000013
+    - cka000014
+    - cka000015
+    - cka000016
+  ignore_errors: yes
+
+- name: "添加公钥到 CKA 用户 authorized_keys"
+  lineinfile:
+    path: "/home/{{ item }}/.ssh/authorized_keys"
+    line: "{{ cka_ssh_public_key }}"
+    create: yes
+    owner: "{{ item }}"
+    group: "{{ item }}"
+    mode: '0600'
+  loop:
+    - cka000050
+    - cka000024
+    - cka000037
+    - cka000046
+    - cka000025
+    - cka000049
+    - cka000060
+    - cka000023
+    - cka000029
+    - cka000031
+    - cka000011
+    - cka000012
+    - cka000013
+    - cka000014
+    - cka000015
+    - cka000016
+  ignore_errors: yes
+  notify: "显示 SSH 信息"

@@ -1,0 +1,20 @@
+---
+# Cluster3 专用配置
+# 部署规则：Question 15, 16 在 cluster3
+
+# ==========================================
+# Question 15 配置 (etcd 修复)
+# ==========================================
+question15_enabled: true
+question15_student_user: "cka000015"
+question15_student_home: "/home/cka000015"
+
+# ==========================================
+# Question 16 配置 (cri-dockerd - 系统级组件)
+# ==========================================
+question16_enabled: true
+question16_student_user: "cka000016"
+question16_student_home: "/home/cka000016"
+
+# CNI 配置
+cni_enabled: true

@@ -1,0 +1,152 @@
+---
+# Question role 默认配置
+
+# 题目编号：1-16 或 'all' 表示部署所有题目
+question_number: "all"
+
+# ==========================================
+# 环境初始化配置
+# ==========================================
+# 设置为 true 时，生成 SSH 密钥并分发到所有 CKA 用户
+init_cka_env: false
+
+# ==========================================
+# Question 1 默认配置 (autoscale namespace)
+# ==========================================
+question1_enabled: false
+question1_student_user: "cka000050"
+question1_student_home: "/home/cka000050"
+question1_namespace: "autoscale"
+question1_deployment: "apache-server"
+question1_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+
+# ==========================================
+# Question 2 默认配置 (sound-repeater namespace)
+# ==========================================
+question2_enabled: false
+question2_student_user: "cka000024"
+question2_student_home: "/home/cka000024"
+question2_namespace: "sound-repeater"
+
+# ==========================================
+# Question 3 默认配置 (default namespace)
+# ==========================================
+question3_enabled: false
+question3_student_user: "cka000037"
+question3_student_home: "/home/cka000037"
+question3_namespace: "default"
+
+# ==========================================
+# Question 4 默认配置 (集群级别 - StorageClass)
+# ==========================================
+question4_enabled: false
+question4_student_user: "cka000046"
+question4_student_home: "/home/cka000046"
+
+# ==========================================
+# Question 5 默认配置 (spline-reticulator namespace)
+# ==========================================
+question5_enabled: false
+question5_student_user: "cka000025"
+question5_student_home: "/home/cka000025"
+question5_namespace: "spline-reticulator"
+question5_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+
+# ==========================================
+# Question 6 默认配置 (priority namespace)
+# ==========================================
+question6_enabled: false
+question6_student_user: "cka000049"
+question6_student_home: "/home/cka000049"
+question6_namespace: "priority"
+question6_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28"
+question6_image_nginx: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+
+# ==========================================
+# Question 7 默认配置 (argocd namespace)
+# ==========================================
+question7_enabled: false
+question7_student_user: "cka000060"
+question7_student_home: "/home/cka000060"
+question7_namespace: "argocd"
+
+# ==========================================
+# Question 8 默认配置 (mariadb namespace)
+# ==========================================
+question8_enabled: false
+question8_student_user: "cka000023"
+question8_student_home: "/home/cka000023"
+question8_namespace: "mariadb"
+question8_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28"
+
+# ==========================================
+# Question 9 默认配置 (default namespace)
+# ==========================================
+question9_enabled: false
+question9_student_user: "cka000029"
+question9_student_home: "/home/cka000029"
+question9_namespace: "default"
+question9_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+
+# ==========================================
+# Question 10 默认配置 (frontend/backend namespace)
+# ==========================================
+question10_enabled: false
+question10_student_user: "cka000031"
+question10_student_home: "/home/cka000031"
+question10_primary_namespace: "frontend"
+question10_secondary_namespace: "backend"
+question10_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+
+# ==========================================
+# Question 11 默认配置 (cert-manager namespace)
+# ==========================================
+question11_enabled: false
+question11_student_user: "cka000011"
+question11_student_home: "/home/cka000011"
+question11_namespace: "cert-manager"
+
+# ==========================================
+# Question 12 默认配置 (nginx-static namespace)
+# ==========================================
+question12_enabled: false
+question12_student_user: "cka000012"
+question12_student_home: "/home/cka000012"
+question12_namespace: "nginx-static"
+question12_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+
+# ==========================================
+# Question 13 默认配置 (Calico - cluster2)
+# ==========================================
+question13_enabled: false
+question13_student_user: "cka000013"
+question13_student_home: "/home/cka000013"
+question13_namespace: "default"
+
+# ==========================================
+# Question 14 默认配置 (relative-fawn namespace)
+# ==========================================
+question14_enabled: false
+question14_student_user: "cka000014"
+question14_student_home: "/home/cka000014"
+question14_namespace: "relative-fawn"
+question14_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+
+# ==========================================
+# Question 15 默认配置 (etcd - cluster3)
+# ==========================================
+question15_enabled: false
+question15_student_user: "cka000015"
+question15_student_home: "/home/cka000015"
+
+# ==========================================
+# Question 16 默认配置 (cri-dockerd - cluster2)
+# ==========================================
+question16_enabled: false
+question16_student_user: "cka000016"
+question16_student_home: "/home/cka000016"
+
+# ==========================================
+# 统一清理配置
+# ==========================================
+question_cleanup: false  # 设置为 true 执行清理任务

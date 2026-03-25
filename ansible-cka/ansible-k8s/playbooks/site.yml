@@ -4,5 +4,8 @@
 - name: 部署 Kubernetes 单节点集群
   hosts: all
   become: yes
+  vars:
+    init_cka_env: true
   roles:
     - kubernetes
+    - question

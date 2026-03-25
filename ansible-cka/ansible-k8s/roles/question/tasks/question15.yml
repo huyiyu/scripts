@@ -1,0 +1,62 @@
+---
+# Question 15 | etcd
+# 题目：修复损坏的单节点集群（etcd 配置错误）
+# 仅在 cluster3 上执行
+
+- name: "检查 Question 15 是否在 cluster3 上运行"
+  fail:
+    msg: "Question 15 只能在 cluster3 上部署"
+  when: "'cluster3' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户（需要 sudo -i 权限修复 etcd）
+# ==========================================
+- name: "创建 {{ question15_student_user | default('cka000015') }} 系统用户"
+  user:
+    name: "{{ question15_student_user | default('cka000015') }}"
+    state: present
+    create_home: yes
+    shell: /bin/bash
+
+- name: "授予 {{ question15_student_user | default('cka000015') }} sudo 权限（允许 sudo -i）"
+  copy:
+    content: "{{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD:ALL"
+    dest: "/etc/sudoers.d/{{ question15_student_user | default('cka000015') }}"
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+# ==========================================
+# 2. 制造 etcd 故障（模拟集群迁移后的损坏状态）
+# ==========================================
+- name: "修改 kube-apiserver etcd 端点配置（制造故障）"
+  lineinfile:
+    path: /etc/kubernetes/manifests/kube-apiserver.yaml
+    regexp: '(--etcd-servers=)https://127\.0\.0\.1:2379'
+    line: '\1https://192.168.18.111:2379'
+    backrefs: yes
+  register: apiserver_modified
+
+- name: "修改 kube-scheduler CPU 请求（制造故障）"
+  lineinfile:
+    path: /etc/kubernetes/manifests/kube-scheduler.yaml
+    regexp: '^(\s+)cpu: 100m$'
+    line: '\1cpu: 4'
+    backrefs: yes
+  register: scheduler_modified
+
+- name: "在 kube-scheduler resources 段添加注释（制造故障）"
+  lineinfile:
+    path: /etc/kubernetes/manifests/kube-scheduler.yaml
+    regexp: '^(\s+)requests:'
+    line: |
+      \1requests:
+      \1  # set CPU requests to 10% of CPUs available in the SYSTEM
+    backrefs: yes
+  register: scheduler_comment_added
+
+- name: "等待 static pod 重启"
+  wait_for:
+    timeout: 20
+  when: apiserver_modified.changed or scheduler_modified.changed
+
+

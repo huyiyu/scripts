@@ -1,0 +1,47 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nginx-static
+  namespace: {{ question6_namespace | default('priority') }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-static
+  template:
+    metadata:
+      labels:
+        app: nginx-static
+    spec:
+      containers:
+        - name: nginx
+          image: {{ question6_image_nginx | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm') }}
+          imagePullPolicy: IfNotPresent
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis-cache
+  namespace: {{ question6_namespace | default('priority') }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis-cache
+  template:
+    metadata:
+      labels:
+        app: redis-cache
+    spec:
+      containers:
+        - name: redis
+          image: {{ question6_image_busybox | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28') }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - /bin/sh
+            - -c
+            - |
+              while true; do
+                sleep 30;
+              done

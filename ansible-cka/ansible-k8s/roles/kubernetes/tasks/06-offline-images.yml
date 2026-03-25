@@ -19,6 +19,11 @@
     path: "{{ offline_images_path }}/{{ calico_images_package }}"
   register: calico_images_tar
 
+- name: 检查 CKA 题目镜像包
+  stat:
+    path: "{{ offline_images_path }}/{{ cka_images_package }}"
+  register: cka_images_tar
+
 # ==========================================
 # 2. 导入 Kubernetes 镜像
 # ==========================================
@@ -54,7 +59,24 @@
   ignore_errors: yes
 
 # ==========================================
-# 4. 验证镜像导入
+# 4. 导入 CKA 题目镜像
+# ==========================================
+- name: 复制 CKA 题目镜像包到目标节点
+  copy:
+    src: "{{ offline_images_path }}/{{ cka_images_package }}"
+    dest: "/tmp/{{ cka_images_package }}"
+    mode: '0644'
+    remote_src: yes
+  when: cka_images_tar.stat.exists | default(false)
+
+- name: 导入 CKA 题目镜像到 containerd
+  shell: |
+    ctr -n k8s.io images import /tmp/{{ cka_images_package }}
+  when: cka_images_tar.stat.exists | default(false)
+  ignore_errors: yes
+
+# ==========================================
+# 5. 验证镜像导入
 # ==========================================
 - name: 列出已导入的 Kubernetes 镜像
   shell: |
@@ -78,8 +100,18 @@
     msg: "{{ imported_calico_images.stdout_lines }}"
   when: cni_enabled | default(true) | bool
 
+- name: 列出已导入的 CKA 题目镜像
+  shell: |
+    ctr -n k8s.io images list | grep -E "(traefik|local-path-provisioner|busybox|echoserver|httpd)" || true
+  register: imported_cka_images
+  changed_when: false
+
+- name: 显示已导入的 CKA 题目镜像
+  debug:
+    msg: "{{ imported_cka_images.stdout_lines }}"
+
 # ==========================================
-# 5. 清理临时文件
+# 6. 清理临时文件
 # ==========================================
 - name: 删除临时镜像包
   file:
@@ -88,4 +120,5 @@
   loop:
     - "{{ k8s_images_package }}"
     - "{{ calico_images_package }}"
+    - "{{ cka_images_package }}"
   ignore_errors: yes

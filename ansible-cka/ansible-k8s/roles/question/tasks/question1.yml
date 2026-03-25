@@ -1,0 +1,46 @@
+---
+# Question 1 | HPA autoscale
+# 题目：在 autoscale namespace 中创建 HPA apache-server，目标 CPU 50%，min=1，max=4，scaleDown stabilizationWindowSeconds=30
+# 仅在 cluster1 上执行
+
+# ==========================================
+# 1. 创建考生用户（使用统一管理模块）
+# ==========================================
+- name: "创建/复用考生用户"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "{{ question1_namespace | default('autoscale') }}"
+    student_user: "{{ question1_student_user | default('cka-autoscale') }}"
+    student_home: "{{ question1_student_home | default('/home/cka-autoscale') }}"
+
+# ==========================================
+# 2. 创建题目所需的 K8s 资源
+# ==========================================
+- name: "创建临时目录存放 YAML 文件"
+  file:
+    path: "/tmp/question1-manifests"
+    state: directory
+    mode: '0755'
+
+- name: "生成 apache-server Deployment YAML"
+  template:
+    src: question1/apache-server-deployment.yaml.j2
+    dest: /tmp/question1-manifests/apache-server-deployment.yaml
+    mode: '0644'
+
+- name: "应用 YAML 文件"
+  shell: kubectl apply -f /tmp/question1-manifests/
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: apply_result
+  changed_when: "'created' in apply_result.stdout or 'configured' in apply_result.stdout"
+
+- name: "等待 {{ question1_deployment | default('apache-server') }} Deployment 就绪"
+  shell: |
+    kubectl wait --for=condition=available deployment/{{ question1_deployment | default('apache-server') }} -n {{ question1_namespace | default('autoscale') }} --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+
+

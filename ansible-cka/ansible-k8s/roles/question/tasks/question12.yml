@@ -1,0 +1,82 @@
+---
+# Question 12 | ConfigMap
+# 题目：nginx-static ConfigMap TLS 配置
+# 仅在 cluster1 上执行
+
+- name: "检查 Question 12 是否在 cluster1 上运行"
+  fail:
+    msg: "Question 12 只能在 cluster1 上部署"
+  when: "'cluster1' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户
+# ==========================================
+- name: "创建/复用考生用户"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "{{ question12_namespace | default('nginx-static') }}"
+    student_user: "{{ question12_student_user | default('cka000012') }}"
+    student_home: "{{ question12_student_home | default('/home/cka000012') }}"
+
+# ==========================================
+# 2. 创建题目所需的 K8s 资源
+# ==========================================
+- name: "创建临时目录存放 YAML 文件"
+  file:
+    path: "/tmp/question12-manifests"
+    state: directory
+    mode: '0755'
+
+- name: "生成 nginx-static namespace YAML"
+  template:
+    src: question12/namespace.yaml.j2
+    dest: /tmp/question12-manifests/namespace.yaml
+    mode: '0644'
+
+- name: "生成 nginx-config ConfigMap YAML"
+  template:
+    src: question12/nginx-config.yaml.j2
+    dest: /tmp/question12-manifests/nginx-config.yaml
+    mode: '0644'
+
+- name: "生成 TLS Secret YAML"
+  template:
+    src: question12/tls-secret.yaml.j2
+    dest: /tmp/question12-manifests/tls-secret.yaml
+    mode: '0644'
+
+- name: "生成 nginx-static Deployment YAML"
+  template:
+    src: question12/deployment.yaml.j2
+    dest: /tmp/question12-manifests/deployment.yaml
+    mode: '0644'
+
+- name: "生成 nginx-static Service YAML"
+  template:
+    src: question12/service.yaml.j2
+    dest: /tmp/question12-manifests/service.yaml
+    mode: '0644'
+
+- name: "应用 YAML 文件"
+  shell: kubectl apply -f /tmp/question12-manifests/
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: apply_result
+  changed_when: "'created' in apply_result.stdout or 'configured' in apply_result.stdout"
+
+- name: "等待 nginx-static Deployment 就绪"
+  shell: |
+    kubectl wait --for=condition=available deployment/nginx-static \
+      -n {{ question12_namespace | default('nginx-static') }} --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+
+# ==========================================
+# 3. 清理临时文件
+# ==========================================
+- name: "清理临时文件"
+  file:
+    path: /tmp/question12-manifests
+    state: absent

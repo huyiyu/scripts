@@ -1,0 +1,52 @@
+---
+# Question 2 | Ingress
+# 题目：在 sound-repeater namespace 中创建 Ingress echo，公开 echoserver-service:8080
+# 仅在 cluster1 上执行
+
+# ==========================================
+# 1. 创建考生用户（使用统一管理模块）
+# ==========================================
+- name: "创建/复用考生用户"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "{{ question2_namespace | default('sound-repeater') }}"
+    student_user: "{{ question2_student_user | default('cka-sound-repeater') }}"
+    student_home: "{{ question2_student_home | default('/home/cka-sound-repeater') }}"
+
+# ==========================================
+# 2. 创建题目所需的 K8s 资源
+# ==========================================
+- name: "创建临时目录存放 YAML 文件"
+  file:
+    path: "/tmp/question2-manifests"
+    state: directory
+    mode: '0755'
+
+- name: "生成 echoserver Deployment YAML"
+  template:
+    src: question2/echoserver-deployment.yaml.j2
+    dest: /tmp/question2-manifests/echoserver-deployment.yaml
+    mode: '0644'
+
+- name: "生成 echoserver Service YAML"
+  template:
+    src: question2/echoserver-service.yaml.j2
+    dest: /tmp/question2-manifests/echoserver-service.yaml
+    mode: '0644'
+
+- name: "应用 YAML 文件"
+  shell: kubectl apply -f /tmp/question2-manifests/
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: apply_result
+  changed_when: "'created' in apply_result.stdout or 'configured' in apply_result.stdout"
+
+- name: "等待 echoserver Deployment 就绪"
+  shell: |
+    kubectl wait --for=condition=available deployment/echoserver -n {{ question2_namespace | default('sound-repeater') }} --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+
+

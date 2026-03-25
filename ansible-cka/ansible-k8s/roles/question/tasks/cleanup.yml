@@ -1,0 +1,88 @@
+---
+# 统一清理所有 Question 资源
+# 用于重置环境，可重复运行
+
+- name: "删除所有 Question namespace"
+  shell: |
+    kubectl delete namespace --ignore-not-found=true \
+      autoscale sound-repeater frontend backend \
+      spline-reticulator priority argocd mariadb \
+      cert-manager nginx-static relative-fawn \
+      netpol-test 2>/dev/null || true
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+
+- name: "删除 Question 相关 ClusterRole 和 ClusterRoleBinding"
+  shell: |
+    kubectl delete clusterrole --ignore-not-found=true \
+      cka-storage-cluster-role 2>/dev/null || true
+    kubectl delete clusterrolebinding --ignore-not-found=true \
+      cka-storage-cluster-binding 2>/dev/null || true
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+
+- name: "删除 Question 相关用户"
+  user:
+    name: "{{ item }}"
+    state: absent
+    remove: yes
+  loop:
+    - cka000050  # Q1
+    - cka000024  # Q2
+    - cka000037  # Q3
+    - cka000046  # Q4
+    - cka000025  # Q5
+    - cka000049  # Q6
+    - cka000060  # Q7
+    - cka000023  # Q8
+    - cka000029  # Q9
+    - cka000031  # Q10
+    - cka000011  # Q11
+    - cka000012  # Q12
+    - cka000013  # Q13
+    - cka000014  # Q14
+    - cka000015  # Q15
+    - cka000016  # Q16
+  ignore_errors: yes
+
+- name: "删除用户主目录"
+  file:
+    path: "/home/{{ item }}"
+    state: absent
+  loop:
+    - cka000050
+    - cka000024
+    - cka000037
+    - cka000046
+    - cka000025
+    - cka000049
+    - cka000060
+    - cka000023
+    - cka000029
+    - cka000031
+    - cka000011
+    - cka000012
+    - cka000013
+    - cka000014
+    - cka000015
+    - cka000016
+  ignore_errors: yes
+
+- name: "清理临时文件"
+  file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - /tmp/question10-manifests
+    - /tmp/cert-manager-manifest.yaml
+    - /tmp/etcd-broken-marker
+    - /tmp/q16-sysctl-reset-done
+  ignore_errors: yes
+
+- name: "清理完成"
+  debug:
+    msg: "所有 Question 资源已清理完成"

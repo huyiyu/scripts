@@ -1,0 +1,264 @@
+---
+# Question 2 基础设施
+# 部署 Traefik Ingress Controller + Nginx 反向代理
+# 仅在 cluster1 上执行
+
+- name: "检查 Question 2 基础设施是否在 cluster1 上部署"
+  fail:
+    msg: "Question 2 基础设施只能在 cluster1 上部署"
+  when: "'cluster1' not in group_names"
+
+# ==========================================
+# 1. 部署 Traefik Ingress Controller (NodePort)
+# ==========================================
+- name: 删除已存在的 Ingress Controller（避免端口冲突）
+  shell: |
+    kubectl delete namespace ingress-traefik 2>/dev/null || true
+    kubectl delete ingressclass traefik 2>/dev/null || true
+    kubectl delete ingressclass nginx 2>/dev/null || true
+    sleep 5
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+
+- name: 创建 Traefik Ingress Controller 基础组件
+  shell: |
+    cat << 'EOF' | kubectl apply -f -
+    apiVersion: v1
+    kind: Namespace
+    metadata:
+      name: ingress-traefik
+    ---
+    apiVersion: v1
+    kind: ServiceAccount
+    metadata:
+      name: traefik-ingress-controller
+      namespace: ingress-traefik
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRole
+    metadata:
+      name: traefik-ingress-controller
+    rules:
+      - apiGroups: [""]
+        resources: ["services", "endpoints", "secrets"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: [""]
+        resources: ["nodes"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: [""]
+        resources: ["pods"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["networking.k8s.io"]
+        resources: ["ingresses", "ingressclasses"]
+        verbs: ["get", "list", "watch"]
+      - apiGroups: ["networking.k8s.io"]
+        resources: ["ingresses/status"]
+        verbs: ["update"]
+    ---
+    apiVersion: rbac.authorization.k8s.io/v1
+    kind: ClusterRoleBinding
+    metadata:
+      name: traefik-ingress-controller
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: traefik-ingress-controller
+    subjects:
+      - kind: ServiceAccount
+        name: traefik-ingress-controller
+        namespace: ingress-traefik
+    ---
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: traefik
+      namespace: ingress-traefik
+    spec:
+      type: NodePort
+      selector:
+        app.kubernetes.io/name: traefik
+      ports:
+        - name: web
+          port: 80
+          targetPort: 80
+          nodePort: 30080
+          protocol: TCP
+    ---
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: traefik
+      namespace: ingress-traefik
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app.kubernetes.io/name: traefik
+      template:
+        metadata:
+          labels:
+            app.kubernetes.io/name: traefik
+        spec:
+          serviceAccountName: traefik-ingress-controller
+          containers:
+            - name: traefik
+              image: docker.io/traefik:v2.10.7
+              args:
+                - --api.insecure=true
+                - --providers.kubernetesingress
+                - --providers.kubernetesingress.ingressclass=traefik
+                - --entrypoints.web.address=:80
+                - --ping=true
+              ports:
+                - name: web
+                  containerPort: 80
+                  protocol: TCP
+                - name: api
+                  containerPort: 8080
+                  protocol: TCP
+              livenessProbe:
+                httpGet:
+                  path: /ping
+                  port: 8080
+                initialDelaySeconds: 10
+                periodSeconds: 10
+              readinessProbe:
+                httpGet:
+                  path: /ping
+                  port: 8080
+                initialDelaySeconds: 5
+                periodSeconds: 10
+              resources:
+                requests:
+                  cpu: 100m
+                  memory: 128Mi
+                limits:
+                  cpu: 300m
+                  memory: 256Mi
+    ---
+    apiVersion: networking.k8s.io/v1
+    kind: IngressClass
+    metadata:
+      name: traefik
+      annotations:
+        ingressclass.kubernetes.io/is-default-class: "true"
+    spec:
+      controller: traefik.io/ingress-controller
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: 等待 Traefik Ingress Controller 就绪
+  shell: |
+    kubectl wait --for=condition=available deployment/traefik -n ingress-traefik --timeout=180s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+
+# ==========================================
+# 2. 部署 Nginx 反向代理 (Systemd)
+# ==========================================
+- name: 安装 Nginx
+  apt:
+    name: nginx
+    state: present
+    update_cache: yes
+
+- name: 配置 Nginx 主配置（包含 stream 模块用于透传）
+  copy:
+    content: |
+      user www-data;
+      worker_processes auto;
+      pid /run/nginx.pid;
+      include /etc/nginx/modules-enabled/*.conf;
+      
+      events {
+          worker_connections 768;
+      }
+      
+      # Stream 模块用于四层 TCP/SSL 透传
+      # 443 端口透传到 Q12 nginx-static Service (NodePort 30443)
+      stream {
+          server {
+              listen 443;
+              proxy_pass 127.0.0.1:30443;
+              proxy_timeout 30s;
+              proxy_connect_timeout 5s;
+          }
+      }
+      
+      http {
+          sendfile on;
+          tcp_nopush on;
+          tcp_nodelay on;
+          keepalive_timeout 65;
+          types_hash_max_size 2048;
+          include /etc/nginx/mime.types;
+          default_type application/octet-stream;
+          ssl_protocols TLSv1 TLSv1.1 TLSv1.2 TLSv1.3;
+          ssl_prefer_server_ciphers on;
+          access_log /var/log/nginx/access.log;
+          error_log /var/log/nginx/error.log;
+          gzip on;
+          include /etc/nginx/conf.d/*.conf;
+          include /etc/nginx/sites-enabled/*;
+      }
+    dest: /etc/nginx/nginx.conf
+    mode: '0644'
+    backup: yes
+
+- name: 配置 Nginx 站点反向代理
+  copy:
+    content: |
+      # HTTP 端口 80 - 转发到 Traefik Ingress Controller (NodePort 30080)
+      # Traefik 处理 Ingress 的 HTTP/HTTPS 流量
+      server {
+          listen 80;
+          server_name _;  # 捕获所有 Host
+          
+          location / {
+              proxy_pass http://127.0.0.1:30080;
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+          }
+      }
+    dest: /etc/nginx/sites-available/ingress-proxy
+    mode: '0644'
+
+- name: 启用 Nginx 配置
+  file:
+    src: /etc/nginx/sites-available/ingress-proxy
+    dest: /etc/nginx/sites-enabled/ingress-proxy
+    state: link
+
+- name: 删除默认 Nginx 配置
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
+- name: 测试并重启 Nginx
+  shell: |
+    nginx -t && systemctl restart nginx
+  ignore_errors: yes
+
+- name: 启用 Nginx 开机自启
+  systemd:
+    name: nginx
+    enabled: yes
+
+# ==========================================
+# 3. 添加 hosts 解析
+# ==========================================
+- name: 添加域名解析到 hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ item }}"
+    state: present
+  loop:
+    - "127.0.0.1 example.org"
+    - "127.0.0.1 gateway.web.k8s.local"
+    - "127.0.0.1 ingress.web.k8s.local"
+    - "127.0.0.1 web.k8snginx.local"

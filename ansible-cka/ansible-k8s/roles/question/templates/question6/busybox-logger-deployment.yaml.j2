@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: busybox-logger
+  namespace: {{ question6_namespace | default('priority') }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: busybox-logger
+  template:
+    metadata:
+      labels:
+        app: busybox-logger
+    spec:
+      containers:
+        - name: busybox
+          image: {{ question6_image | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28') }}
+          imagePullPolicy: IfNotPresent
+          args:
+            - /bin/sh
+            - -c
+            - |
+              i=0; while true; do
+                echo "$$(date) INFO $$i" >> /var/log/busybox-logger.log;
+                i=$$((i+1));
+                sleep 5;
+              done
+      # 注意：当前未设置 priorityClassName，考生需要创建 high-priority PriorityClass 并修改 Deployment 使用它

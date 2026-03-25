@@ -1,0 +1,96 @@
+---
+# Question 11 | CRD
+# 题目：验证 cert-manager，提取 CRD 列表和 Certificate subject 文档
+# 仅在 cluster1 上执行
+# 使用在线 YAML 部署 cert-manager（镜像已通过离线包导入）
+
+- name: "检查 Question 11 是否在 cluster1 上运行"
+  fail:
+    msg: "Question 11 只能在 cluster1 上部署"
+  when: "'cluster1' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户
+# ==========================================
+- name: "创建/复用考生用户"
+  import_tasks: manage-student-user.yml
+  vars:
+    student_namespace: "{{ question11_namespace | default('cert-manager') }}"
+    student_user: "{{ question11_student_user | default('cka000011') }}"
+    student_home: "{{ question11_student_home | default('/home/cka000011') }}"
+
+# ==========================================
+# 2. 部署 cert-manager（使用在线 YAML，镜像已通过离线包导入）
+# ==========================================
+- name: "检查 cert-manager 是否已部署"
+  shell: |
+    kubectl get deployment cert-manager -n cert-manager 2>/dev/null || echo "NOT_FOUND"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: cert_manager_check
+  changed_when: false
+
+- name: "部署 cert-manager"
+  shell: |
+    kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.0/cert-manager.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: cert_manager_check.stdout == "NOT_FOUND"
+
+- name: "等待 cert-manager 部署就绪"
+  shell: |
+    kubectl wait --for=condition=available deployment/cert-manager -n cert-manager --timeout=120s
+    kubectl wait --for=condition=available deployment/cert-manager-cainjector -n cert-manager --timeout=120s
+    kubectl wait --for=condition=available deployment/cert-manager-webhook -n cert-manager --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+  when: cert_manager_check.stdout == "NOT_FOUND"
+
+# ==========================================
+# 3. 创建示例 Certificate（供学生查看）
+# ==========================================
+- name: "创建示例 Certificate"
+  shell: |
+    cat <<EOF | kubectl apply -f -
+    apiVersion: cert-manager.io/v1
+    kind: Certificate
+    metadata:
+      name: sample-cert
+      namespace: {{ question11_namespace | default('cert-manager') }}
+    spec:
+      secretName: sample-tls-secret
+      issuerRef:
+        name: selfsigned-issuer
+        kind: Issuer
+      subject:
+        organizations:
+          - Example Organization
+        countries:
+          - CN
+        localities:
+          - Beijing
+        provinces:
+          - Beijing
+        streetAddresses:
+          - "123 Main Street"
+        postalCodes:
+          - "100000"
+        serialNumber: "1234567890"
+      dnsNames:
+        - example.com
+        - www.example.com
+    ---
+    apiVersion: cert-manager.io/v1
+    kind: Issuer
+    metadata:
+      name: selfsigned-issuer
+      namespace: {{ question11_namespace | default('cert-manager') }}
+    spec:
+      selfSigned: {}
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false

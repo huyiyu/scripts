@@ -1,0 +1,35 @@
+---
+# Question 4 基础设施
+# 准备 local-path-provisioner 环境（模拟已有制备器）
+
+- name: 创建本地存储目录
+  file:
+    path: /opt/local-path-provisioner
+    state: directory
+    mode: '0755'
+
+- name: 检查是否已存在 local-path StorageClass
+  shell: |
+    kubectl get sc local-path 2>/dev/null || echo "not found"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: local_path_sc_check
+  ignore_errors: yes
+
+- name: 创建示例 local-path StorageClass（供参考）
+  shell: |
+    cat << 'EOF' | kubectl apply -f -
+    apiVersion: storage.k8s.io/v1
+    kind: StorageClass
+    metadata:
+      name: local-path
+      annotations:
+        storageclass.kubernetes.io/is-default-class: "false"
+    provisioner: rancher.io/local-path
+    volumeBindingMode: WaitForFirstConsumer
+    reclaimPolicy: Delete
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: local_path_sc_check.stdout == "not found"
+  ignore_errors: yes

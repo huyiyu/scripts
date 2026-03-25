@@ -7,7 +7,7 @@ set -e
 # 获取脚本目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="${SCRIPT_DIR}/../.."
-GROUP_VARS_FILE="${PROJECT_ROOT}/ansible-k8s/group_vars/all.yml"
+GROUP_VARS_FILE="${PROJECT_ROOT}/ansible-k8s/inventory/group_vars/all.yml"
 
 # 颜色定义
 RED='\033[0;31m'
@@ -184,9 +184,9 @@ download_containerd() {
         "containerd.service"
 }
 
-# 下载工具（crictl, helm）
+# 下载工具（crictl, helm, cri-dockerd）
 download_tools() {
-    log_step "2" "下载工具（crictl, helm）"
+    log_step "2" "下载工具（crictl, helm, cri-dockerd）"
     cd "${PACKAGES_DIR}/k8s"
     
     download_file \
@@ -198,6 +198,12 @@ download_tools() {
         "https://get.helm.sh/helm-v3.18.4-linux-amd64.tar.gz" \
         "" \
         "helm v3.18.4"
+    
+    # 下载 cri-dockerd（用于 CKA Q16）
+    download_file \
+        "https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.6/cri-dockerd_0.3.6.3-0.ubuntu-jammy_amd64.deb" \
+        "" \
+        "cri-dockerd v0.3.6"
 }
 
 # 下载 Kubernetes 二进制文件（kubelet, kubectl, kubeadm）
@@ -256,10 +262,12 @@ download_calico() {
     log_info "使用自定义 custom-resources.yaml 进行配置"
 }
 
+
+
 # 基础依赖包不再离线准备，部署时直接使用 apt 安装
 # 请确保目标节点已配置可用的 apt 源（内网源或在线源）
 download_base_packages() {
-    log_step "6" "依赖包说明"
+    log_step "7" "依赖包说明"
     log_info "基础依赖包不再离线准备，将在部署时通过 apt 直接安装"
     log_info "请确保目标节点已配置可用的 apt 源（内网源或在线源）"
     log_info "需要安装的包: iptables, ipset, ipvsadm, conntrack, ethtool, socat 等"
@@ -342,6 +350,52 @@ export_images() {
         docker save "${CALICO_IMAGES[@]}" -o "${CALICO_IMAGES_PACKAGE}" 2>/dev/null && \
             log_success "Calico 镜像包保存完成" || \
             log_warn "Calico 镜像包保存失败"
+    fi
+    
+    # CKA 题目镜像（Traefik, local-path-provisioner 等）
+    log_info "导出 CKA 题目镜像..."
+    
+    CKA_IMAGES_PACKAGE="cka-images.tar"
+    if [ -f "${CKA_IMAGES_PACKAGE}" ] && [ "$FORCE_DOWNLOAD" = false ]; then
+        local size=$(du -h "${CKA_IMAGES_PACKAGE}" 2>/dev/null | cut -f1)
+        log_info "CKA 题目镜像包已存在 (${size})，跳过导出"
+    else
+        CKA_IMAGES=(
+            # 基础组件
+            "rancher/local-path-provisioner:v0.0.24"
+            "docker.io/traefik:v2.10.7"
+            # ArgoCD 相关 (Q7)
+            "quay.io/argoproj/argocd:v2.13.0"
+            "ghcr.io/dexidp/dex:v2.41.1"
+            "public.ecr.aws/docker/library/redis:7.4.1-alpine"
+            # Gateway API (Q9)
+            "ghcr.io/nginx/nginx-gateway-fabric:2.4.2"
+            # cert-manager (Q11)
+            "quay.io/jetstack/cert-manager-controller:v1.13.0"
+            "quay.io/jetstack/cert-manager-cainjector:v1.13.0"
+            "quay.io/jetstack/cert-manager-webhook:v1.13.0"
+            # 题目镜像 (阿里云镜像仓库)
+            "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox-unstable"
+            "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28"
+            "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:echoserver"
+            "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+            # Q12 ConfigMap TLS
+            "docker.io/library/nginx:alpine"
+            # Q14 WordPress Resources
+            "docker.io/library/wordpress:latest"
+            # Q3 Sidecar (busybox stable版本作为备选)
+            "docker.io/library/busybox:stable"
+        )
+        
+        for img in "${CKA_IMAGES[@]}"; do
+            log_info "拉取 ${img}..."
+            docker pull "${img}" >/dev/null 2>&1 || log_warn "拉取 ${img} 失败"
+        done
+        
+        log_info "保存 CKA 题目镜像包..."
+        docker save "${CKA_IMAGES[@]}" -o "${CKA_IMAGES_PACKAGE}" 2>/dev/null && \
+            log_success "CKA 题目镜像包保存完成" || \
+            log_warn "CKA 题目镜像包保存失败"
     fi
 }
 

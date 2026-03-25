@@ -1,0 +1,35 @@
+# cri-dockerd configuration file
+# This file contains configuration options for cri-dockerd
+
+# Runtime endpoint
+runtime-endpoint: unix:///var/run/cri-dockerd.sock
+
+# Image endpoint
+image-endpoint: unix:///var/run/cri-dockerd.sock
+
+# Timeout for commands
+timeout: 0
+
+# Debug mode
+debug: false
+
+# CNI configuration
+cni-bin-dir: /opt/cni/bin
+cni-conf-dir: /etc/cni/net.d
+
+# Pod infra container image
+pod-infra-container-image: registry.k8s.io/pause:3.9
+
+# Network plugin
+network-plugin: cni
+
+# Hairpin mode
+hairpin-mode: promiscuous-bridge
+
+# Registry configuration
+# registry-mirrors:
+#   - https://mirror.example.com
+
+# Insecure registries
+# insecure-registries:
+#   - insecure-registry.example.com

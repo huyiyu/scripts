@@ -1,0 +1,38 @@
+---
+# Question 16 | cri-dockerd
+# 题目：安装 cri-dockerd 并配置系统参数
+# 仅在 cluster3 上执行
+# 注意：cri-dockerd 是系统级组件，无需 namespace
+
+- name: "检查 Question 16 是否在 cluster3 上运行"
+  fail:
+    msg: "Question 16 只能在 cluster3 上部署"
+  when: "'cluster3' not in group_names"
+
+# ==========================================
+# 1. 创建考生用户（需要 sudo -i 权限安装 cri-dockerd）
+# ==========================================
+- name: "创建 {{ question16_student_user | default('cka000016') }} 系统用户"
+  user:
+    name: "{{ question16_student_user | default('cka000016') }}"
+    state: present
+    create_home: yes
+    shell: /bin/bash
+
+- name: "授予 {{ question16_student_user | default('cka000016') }} sudo 权限（允许 sudo -i）"
+  copy:
+    content: "{{ question16_student_user | default('cka000016') }} ALL=(ALL) NOPASSWD:ALL"
+    dest: "/etc/sudoers.d/{{ question16_student_user | default('cka000016') }}"
+    mode: '0440'
+    validate: 'visudo -cf %s'
+
+# ==========================================
+# 2. 复制 cri-dockerd deb 包到用户目录
+# ==========================================
+- name: "复制 cri-dockerd deb 包到用户 home 目录"
+  shell: |
+    cp {{ offline_packages_path }}/k8s/cri-dockerd_0.3.6.3-0.ubuntu-jammy_amd64.deb {{ question16_student_home | default('/home/cka000016') }}/cri-dockerd_0.3.6.3-0.ubuntu-jammy_amd64.deb
+    chown {{ question16_student_user | default('cka000016') }}:{{ question16_student_user | default('cka000016') }} {{ question16_student_home | default('/home/cka000016') }}/cri-dockerd_0.3.6.3-0.ubuntu-jammy_amd64.deb
+    chmod 644 {{ question16_student_home | default('/home/cka000016') }}/cri-dockerd_0.3.6.3-0.ubuntu-jammy_amd64.deb
+  args:
+    creates: "{{ question16_student_home | default('/home/cka000016') }}/cri-dockerd_0.3.6.3-0.ubuntu-jammy_amd64.deb"

@@ -47,7 +47,7 @@
       Environment="KUBELET_CONFIG_ARGS=--config=/var/lib/kubelet/config.yaml"
       EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
       ExecStart=
-      ExecStart=/usr/local/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_KUBEADM_ARGS $KUBELET_EXTRA_ARGS
+      ExecStart=/usr/local/bin/kubelet $KUBELET_KUBECONFIG_ARGS $KUBELET_CONFIG_ARGS $KUBELET_EXTRA_ARGS
     dest: /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
     mode: '0644'
 
@@ -228,7 +228,40 @@
   when: not ansible_check_mode
 
 # ==========================================
-# 8. 验证集群状态
+# 8. 配置 kubectl 自动补全（系统级）
+# ==========================================
+- name: 安装 bash-completion 包
+  apt:
+    name: bash-completion
+    state: present
+  ignore_errors: yes
+
+- name: 确保 bash_completion.d 目录存在
+  file:
+    path: /etc/bash_completion.d
+    state: directory
+    mode: '0755'
+
+- name: 生成 kubectl bash 补全脚本
+  shell: |
+    kubectl completion bash > /etc/bash_completion.d/kubectl
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  when: not ansible_check_mode
+
+- name: 配置系统级 k 别名及补全
+  copy:
+    content: |
+      # kubectl 简写别名
+      alias k=kubectl
+      # k 命令也启用补全
+      complete -o default -F __start_kubectl k 2>/dev/null || true
+    dest: /etc/profile.d/kubectl-alias.sh
+    mode: '0644'
+
+# ==========================================
+# 9. 验证集群状态
 # ==========================================
 - name: 获取集群信息
   shell: kubectl cluster-info
