@@ -95,3 +95,10 @@
 - name: 导入 Question 16 - cri-dockerd
   import_tasks: question16.yml
   when: question16_enabled | default(false) | bool
+
+# ==========================================
+# 最后显示 SSH 连接信息
+# ==========================================
+- name: 显示 SSH 连接信息
+  import_tasks: show_ssh_info.yml
+  when: init_cka_env | default(false) | bool

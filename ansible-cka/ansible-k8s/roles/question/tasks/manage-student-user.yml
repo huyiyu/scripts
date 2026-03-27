@@ -29,6 +29,23 @@
     create_home: yes
     shell: /bin/bash
 
+- name: "创建/修复 .ssh 目录权限"
+  file:
+    path: "{{ _student_home }}/.ssh"
+    state: directory
+    owner: "{{ _student_user }}"
+    group: "{{ _student_user }}"
+    mode: '0700'
+
+- name: "修复 authorized_keys 权限"
+  file:
+    path: "{{ _student_home }}/.ssh/authorized_keys"
+    state: file
+    owner: "{{ _student_user }}"
+    group: "{{ _student_user }}"
+    mode: '0600'
+  ignore_errors: yes
+
 - name: "创建 .kube 目录"
   file:
     path: "{{ _student_home }}/.kube"

@@ -27,7 +27,7 @@
     validate: 'visudo -cf %s'
 
 # ==========================================
-# 2. 复制 cri-dockerd deb 包到用户目录
+# 2. 复制 cri-dockerd deb 包和 crictl 到用户目录
 # ==========================================
 - name: "复制 cri-dockerd deb 包到用户 home 目录"
   shell: |
@@ -36,3 +36,33 @@
     chmod 644 {{ question16_student_home | default('/home/cka000016') }}/cri-dockerd_0.3.6.3-0.ubuntu-jammy_amd64.deb
   args:
     creates: "{{ question16_student_home | default('/home/cka000016') }}/cri-dockerd_0.3.6.3-0.ubuntu-jammy_amd64.deb"
+
+- name: "检查 /opt 目录是否存在 crictl"
+  find:
+    paths: "/opt"
+    patterns: "crictl*"
+    file_type: file
+  register: opt_crictl_files
+  ignore_errors: yes
+
+- name: "从 /opt 复制 crictl 到系统目录"
+  copy:
+    src: "{{ item.path }}"
+    dest: "/usr/local/bin/crictl"
+    mode: '0755'
+    remote_src: yes
+  with_items: "{{ opt_crictl_files.files }}"
+  when: opt_crictl_files.files | length > 0
+
+- name: "检查离线包目录是否存在 crictl"
+  stat:
+    path: "{{ offline_packages_path }}/k8s/crictl-v1.34.0-linux-amd64.tar.gz"
+  register: crictl_package
+
+- name: "解压安装 crictl"
+  unarchive:
+    src: "{{ offline_packages_path }}/k8s/crictl-v1.34.0-linux-amd64.tar.gz"
+    dest: "/usr/local/bin"
+    remote_src: yes
+    mode: '0755'
+  when: crictl_package.stat.exists

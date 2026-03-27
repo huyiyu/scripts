@@ -1,0 +1,8 @@
+---
+# 部署 CKA 评分系统到 cluster3 (cka000016 用户)
+
+- name: 部署 CKA 评分系统到 cluster3
+  hosts: cluster3
+  become: yes
+  roles:
+    - score

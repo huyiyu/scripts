@@ -1,6 +1,6 @@
 ---
 # Question 4 基础设施
-# 准备 local-path-provisioner 环境（模拟已有制备器）
+# 部署 local-path-provisioner
 
 - name: 创建本地存储目录
   file:
@@ -8,6 +8,34 @@
     state: directory
     mode: '0755'
 
+# ==========================================
+# 1. 安装 local-path-provisioner
+# ==========================================
+- name: 检查 local-path-provisioner 是否已安装
+  shell: |
+    kubectl get deployment -n local-path-storage local-path-provisioner 2>/dev/null || echo "not found"
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  register: lpp_check
+  ignore_errors: yes
+
+- name: 安装 local-path-provisioner
+  shell: |
+    kubectl apply -f https://raw.githubusercontent.com/rancher/local-path-provisioner/v0.0.24/deploy/local-path-storage.yaml
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: lpp_check.stdout == "not found"
+
+- name: 等待 local-path-provisioner 就绪
+  shell: |
+    kubectl wait --for=condition=available deployment/local-path-provisioner -n local-path-storage --timeout=120s
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+
+# ==========================================
+# 2. 创建 StorageClass
+# ==========================================
 - name: 检查是否已存在 local-path StorageClass
   shell: |
     kubectl get sc local-path 2>/dev/null || echo "not found"
@@ -16,7 +44,7 @@
   register: local_path_sc_check
   ignore_errors: yes
 
-- name: 创建示例 local-path StorageClass（供参考）
+- name: 创建 local-path StorageClass
   shell: |
     cat << 'EOF' | kubectl apply -f -
     apiVersion: storage.k8s.io/v1

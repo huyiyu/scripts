@@ -32,35 +32,44 @@
   changed_when: false
 
 # ==========================================
-# 2. 创建 GatewayClass
+# 2. 安装 Gateway API CRDs
 # ==========================================
-- name: "检查 GatewayClass nginx 是否存在"
+- name: "检查 Gateway API CRDs 是否已安装"
   shell: |
-    kubectl get gatewayclass nginx 2>/dev/null || echo "NOT_FOUND"
-  register: gatewayclass_check
+    kubectl get crd gatewayclasses.gateway.networking.k8s.io 2>/dev/null || echo "NOT_FOUND"
+  register: gateway_crds_check
   changed_when: false
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
 
-- name: "创建 GatewayClass nginx"
+- name: "安装 Gateway API CRDs (v1.1.0 包含 GRPCRoute)"
   shell: |
-    cat << 'EOF' | kubectl apply -f -
-    apiVersion: gateway.networking.k8s.io/v1
-    kind: GatewayClass
-    metadata:
-      name: nginx
-      labels:
-        app.kubernetes.io/name: nginx-gateway
-        app.kubernetes.io/instance: nginx-gateway
-    spec:
-      controllerName: gateway.nginx.org/nginx-gateway-controller
-    EOF
+    kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.1.0/standard-install.yaml
   environment:
     KUBECONFIG: /etc/kubernetes/admin.conf
-  when: gatewayclass_check.stdout == "NOT_FOUND"
+  when: gateway_crds_check.stdout == "NOT_FOUND"
 
 # ==========================================
-# 3. 部署 NGINX Gateway Fabric (使用 Helm OCI)
+# 3. 清理手动创建的 GatewayClass（避免 Helm 冲突）
+# ==========================================
+- name: "检查是否存在手动创建的 GatewayClass"
+  shell: |
+    kubectl get gatewayclass nginx -o jsonpath='{.metadata.labels.app\.kubernetes\.io/managed-by}' 2>/dev/null || echo "NOT_FOUND"
+  register: gatewayclass_managed_by
+  changed_when: false
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+
+- name: "删除手动创建的 GatewayClass（让 Helm 重新创建）"
+  shell: |
+    kubectl delete gatewayclass nginx 2>/dev/null || true
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  when: gatewayclass_managed_by.stdout != "Helm" and gatewayclass_managed_by.stdout != "NOT_FOUND"
+
+# ==========================================
+# 4. 部署 NGINX Gateway Fabric (使用 Helm OCI)
+# 注意：Helm chart 会自动创建 GatewayClass
 # ==========================================
 - name: "检查 NGINX Gateway Fabric 是否已部署"
   shell: |
@@ -84,7 +93,7 @@
   ignore_errors: yes
 
 # ==========================================
-# 4. 创建 Web 应用程序资源
+# 5. 创建 Web 应用程序资源
 # ==========================================
 - name: "创建 web Deployment"
   shell: |
@@ -140,7 +149,7 @@
   changed_when: false
 
 # ==========================================
-# 5. 创建 TLS 证书和 Secret
+# 6. 创建 TLS 证书和 Secret
 # ==========================================
 - name: "生成自签名 TLS 证书"
   shell: |
@@ -176,7 +185,7 @@
   ignore_errors: yes
 
 # ==========================================
-# 6. 创建现有 Ingress（供考生迁移）
+# 7. 创建现有 Ingress（供考生迁移）
 # ==========================================
 - name: "创建 Ingress web（供考生迁移）"
   shell: |
@@ -218,7 +227,7 @@
   ignore_errors: yes
 
 # ==========================================
-# 7. 添加 hosts 解析
+# 8. 添加 hosts 解析
 # ==========================================
 - name: "添加域名解析到 hosts"
   lineinfile:
@@ -230,7 +239,7 @@
     - "127.0.0.1 gateway.web.k8s.local"
 
 # ==========================================
-# 8. 显示基础设施信息
+# 9. 显示基础设施信息
 # ==========================================
 - name: "显示 Question 9 基础设施部署完成信息"
   debug:

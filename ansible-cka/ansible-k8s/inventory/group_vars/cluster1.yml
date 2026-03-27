@@ -110,12 +110,12 @@ question12_namespace: "nginx-static"
 question12_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
 
 # ==========================================
-# Question 14 配置 (hollow namespace)
+# Question 14 配置 (relative-fawn namespace)
 # ==========================================
 question14_enabled: true
 question14_student_user: "cka000014"
 question14_student_home: "/home/cka000014"
-question14_namespace: "hollow"
+question14_namespace: "relative-fawn"
 question14_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
 
 # ==========================================

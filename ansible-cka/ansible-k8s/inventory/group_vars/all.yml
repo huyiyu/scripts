@@ -103,7 +103,7 @@ cka_images:
   - "ghcr.io/dexidp/dex:v2.41.1"
   - "public.ecr.aws/docker/library/redis:7.4.1-alpine"
   # NGINX Gateway Fabric (Gateway API Controller)
-  - "ghcr.io/nginx/nginx-gateway-fabric:2.2.1"
+  - "ghcr.io/nginx/nginx-gateway-fabric:2.4.2"
 
 # ------------------------------------------
 # 部署用户配置（使用 root 直接部署）

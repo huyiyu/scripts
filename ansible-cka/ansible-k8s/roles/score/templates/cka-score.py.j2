@@ -1,0 +1,720 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+CKA 考试评分脚本 (完整版 - 16道题)
+"""
+
+import subprocess
+import sys
+import json
+import os
+from datetime import datetime
+from typing import Dict, List, Tuple, Optional
+
+PASSING_SCORE = {{ score_passing_threshold }}
+TOTAL_SCORE = {{ total_score }}
+QUESTION_COUNT = 16
+SCORE_PER_QUESTION = TOTAL_SCORE / QUESTION_COUNT
+
+# Kubeconfig 路径 (cluster3 上的位置)
+KUBECONFIGS = {
+    "cluster1": "/home/cka000016/.kube/cluster1-config",
+    "cluster2": "/home/cka000016/.kube/cluster2-config",
+    "cluster3": "/etc/kubernetes/admin.conf",
+}
+
+class Colors:
+    GREEN = '\033[92m'
+    RED = '\033[91m'
+    YELLOW = '\033[93m'
+    BLUE = '\033[94m'
+    CYAN = '\033[96m'
+    MAGENTA = '\033[95m'
+    BOLD = '\033[1m'
+    DIM = '\033[2m'
+    END = '\033[0m'
+
+def run_kubectl(cluster: str, args: str, ignore_error: bool = False) -> Tuple[bool, str]:
+    kubeconfig = KUBECONFIGS.get(cluster)
+    if not kubeconfig or not os.path.exists(kubeconfig):
+        return False, f"Kubeconfig not found: {kubeconfig}"
+    cmd = f"KUBECONFIG={kubeconfig} kubectl {args}"
+    try:
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            return True, result.stdout
+        if ignore_error:
+            return True, result.stdout + result.stderr
+        return False, result.stderr
+    except subprocess.TimeoutExpired:
+        return False, "Command timeout"
+    except Exception as e:
+        return False, str(e)
+
+def run_ssh(host: str, cmd: str) -> Tuple[bool, str]:
+    try:
+        ssh_cmd = f"ssh -o StrictHostKeyChecking=no -o ConnectTimeout=10 root@{host} '{cmd}'"
+        result = subprocess.run(ssh_cmd, shell=True, capture_output=True, text=True, timeout=30)
+        if result.returncode == 0:
+            return True, result.stdout
+        return False, result.stderr
+    except Exception as e:
+        return False, str(e)
+
+# ============ 基础检查函数 ============
+
+def check_deployment(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get deployment {name} -n {namespace} -o json")
+    if not success:
+        return False, f"Deployment {name} 不存在"
+    try:
+        data = json.loads(output)
+        ready = data.get('status', {}).get('readyReplicas', 0)
+        desired = data.get('spec', {}).get('replicas', 1)
+        if ready >= desired:
+            return True, f"Deployment {name} 运行正常 ({ready}/{desired})"
+        return False, f"Deployment {name} 未就绪 ({ready}/{desired})"
+    except:
+        return False, f"解析 Deployment 状态失败"
+
+def check_pod_running(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get pod -n {namespace} -o json")
+    if not success:
+        return False, f"无法获取 Pod 列表"
+    try:
+        data = json.loads(output)
+        for pod in data.get('items', []):
+            pod_name = pod.get('metadata', {}).get('name', '')
+            if name in pod_name:
+                phase = pod.get('status', {}).get('phase', '')
+                if phase == 'Running':
+                    return True, f"Pod {pod_name} 运行中"
+                return False, f"Pod {pod_name} 状态: {phase}"
+        return False, f"Pod {name} 不存在"
+    except:
+        return False, f"解析 Pod 状态失败"
+
+def check_service(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, _ = run_kubectl(cluster, f"get service {name} -n {namespace}")
+    if success:
+        return True, f"Service {name} 存在"
+    return False, f"Service {name} 不存在"
+
+def check_ingress(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, _ = run_kubectl(cluster, f"get ingress {name} -n {namespace}")
+    if success:
+        return True, f"Ingress {name} 存在"
+    return False, f"Ingress {name} 不存在"
+
+def check_ingress_deleted(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, _ = run_kubectl(cluster, f"get ingress {name} -n {namespace}")
+    if success:
+        return False, f"Ingress {name} 仍存在，需要删除"
+    return True, f"Ingress {name} 已删除"
+
+# ============ Q2 专用检查 - Ingress 访问测试 ============
+def check_ingress_access(cluster: str, namespace: str, host: str, path: str = "/") -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get service -n ingress-traefik -o json")
+    if not success:
+        return False, "无法获取 Ingress Controller Service"
+    try:
+        data = json.loads(output)
+        nodeport = None
+        for svc in data.get('items', []):
+            ports = svc.get('spec', {}).get('ports', [])
+            for port in ports:
+                if port.get('name') == 'web':
+                    nodeport = port.get('nodePort')
+                    break
+        if not nodeport:
+            return False, "未找到 Ingress NodePort"
+        test_cmd = f"curl -s -o /dev/null -w '%{{'{{'}}http_code{{'}}'}}' -H 'Host: {host}' http://localhost:30080{path} --max-time 5"
+        result = subprocess.run(test_cmd, shell=True, capture_output=True, text=True, timeout=10)
+        if result.stdout.strip() in ['200', '301', '302']:
+            return True, f"Ingress 访问正常 (HTTP {result.stdout.strip()})"
+        return False, f"Ingress 访问失败 (HTTP {result.stdout.strip()})"
+    except Exception as e:
+        return False, f"测试访问异常: {str(e)}"
+
+# ============ Q3 专用检查 - Sidecar ============
+def check_pod_sidecar(cluster: str, namespace: str, pod_name: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get pod -n {namespace} -o json")
+    if not success:
+        return False, f"无法获取 Pod 列表"
+    try:
+        data = json.loads(output)
+        for pod in data.get('items', []):
+            if pod_name in pod.get('metadata', {}).get('name', ''):
+                containers = pod.get('spec', {}).get('containers', [])
+                if len(containers) >= 2:
+                    return True, f"Pod 包含 {len(containers)} 个容器 (含 sidecar)"
+                return False, f"Pod 只有 {len(containers)} 个容器，缺少 sidecar"
+        return False, f"Pod {pod_name} 不存在"
+    except:
+        return False, f"解析 Pod 配置失败"
+
+def check_log_file(cluster: str, namespace: str, pod_name: str, container: str, log_path: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get pod -n {namespace} -o json")
+    if not success:
+        return False, f"无法获取 Pod 列表"
+    try:
+        data = json.loads(output)
+        for pod in data.get('items', []):
+            if pod_name in pod.get('metadata', {}).get('name', ''):
+                exec_cmd = f"exec {pod.get('metadata', {}).get('name')} -n {namespace} -c {container} -- ls {log_path}"
+                success, _ = run_kubectl(cluster, exec_cmd, ignore_error=True)
+                if success:
+                    return True, f"日志文件 {log_path} 存在"
+                return False, f"日志文件 {log_path} 不存在"
+        return False, f"Pod {pod_name} 不存在"
+    except:
+        return False, f"检查日志文件失败"
+
+# ============ Q4 专用检查 - StorageClass ============
+def check_storageclass(cluster: str, name: str, is_default: bool = True) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get storageclass {name} -o json")
+    if not success:
+        return False, f"StorageClass {name} 不存在"
+    try:
+        data = json.loads(output)
+        annotations = data.get('metadata', {}).get('annotations', {})
+        is_default_sc = annotations.get('storageclass.kubernetes.io/is-default-class') == 'true'
+        if is_default and not is_default_sc:
+            return False, f"StorageClass {name} 未设置为默认"
+        elif is_default and is_default_sc:
+            return True, f"StorageClass {name} 存在且为默认"
+        return True, f"StorageClass {name} 存在"
+    except:
+        return False, f"解析 StorageClass 失败"
+
+# ============ Q11 专用检查 - cert-manager ============
+def check_crd_list(cluster: str) -> Tuple[bool, str]:
+    files_to_check = [
+        "/home/cka000011/crd-list.txt",
+        "/home/cka000011/cert-manager-crd.txt",
+    ]
+    for f in files_to_check:
+        if os.path.exists(f):
+            return True, f"CRD 列表文件存在 ({os.path.basename(f)})"
+    return False, "CRD 列表文件不存在"
+
+def check_certificate_doc(cluster: str) -> Tuple[bool, str]:
+    files_to_check = [
+        "/home/cka000011/certificate-subject.txt",
+        "/home/cka000011/cert-subject.txt",
+    ]
+    for f in files_to_check:
+        if os.path.exists(f):
+            return True, f"Certificate 文档存在 ({os.path.basename(f)})"
+    return False, "Certificate subject 文档不存在"
+
+# ============ Q12 专用检查 - TLS 1.2 ============
+def check_tls_version(cluster: str, namespace: str, service: str, unused=None) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get service {service} -n {namespace} -o json")
+    if not success:
+        return False, f"Service {service} 不存在"
+    try:
+        data = json.loads(output)
+        ports = data.get('spec', {}).get('ports', [])
+        https_port = None
+        for port in ports:
+            if port.get('name') == 'https' or port.get('port') == 443:
+                https_port = port.get('nodePort')
+                break
+        if not https_port:
+            return False, "未找到 HTTPS 端口"
+        test_cmd = f"echo | openssl s_client -connect localhost:{https_port} -tls1_2 2>&1 | grep 'Protocol'"
+        result = subprocess.run(test_cmd, shell=True, capture_output=True, text=True, timeout=10)
+        if 'TLSv1.2' in result.stdout or 'TLSv1.3' in result.stdout:
+            return True, "TLS 1.2/1.3 配置正确"
+        return False, "TLS 版本不符合要求"
+    except Exception as e:
+        return False, f"检查 TLS 版本失败: {str(e)}"
+
+# ============ 其他检查函数 ============
+
+def check_hpa(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get hpa {name} -n {namespace} -o json")
+    if not success:
+        return False, f"HPA {name} 不存在"
+    try:
+        data = json.loads(output)
+        spec = data.get('spec', {})
+        min_replicas = spec.get('minReplicas')
+        max_replicas = spec.get('maxReplicas')
+        metrics = spec.get('metrics', [])
+        cpu_percent = None
+        for m in metrics:
+            if m.get('type') == 'Resource' and m.get('resource', {}).get('name') == 'cpu':
+                cpu_percent = m.get('resource', {}).get('target', {}).get('averageUtilization')
+        if min_replicas == 1 and max_replicas == 2 and cpu_percent == 50:
+            return True, f"HPA 配置正确 (min={min_replicas}, max={max_replicas}, cpu={cpu_percent}%)"
+        return False, f"HPA 配置错误 (min={min_replicas}, max={max_replicas}, cpu={cpu_percent}%)"
+    except:
+        return False, "解析 HPA 配置失败"
+
+def check_priorityclass(cluster: str, name: str, value: int = None) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get priorityclass {name} -o json")
+    if not success:
+        return False, f"PriorityClass {name} 不存在"
+    try:
+        data = json.loads(output)
+        actual_value = data.get('value', 0)
+        if value is not None and actual_value != value:
+            return False, f"PriorityClass 值={actual_value}, 期望 {value}"
+        return True, f"PriorityClass {name} 值={actual_value}"
+    except:
+        return False, "解析 PriorityClass 失败"
+
+def check_pod_priority(cluster: str, namespace: str, pod_name: str, priority_class: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get pod -n {namespace} -o json")
+    if not success:
+        return False, "无法获取 Pod 列表"
+    try:
+        data = json.loads(output)
+        for pod in data.get('items', []):
+            if pod_name in pod.get('metadata', {}).get('name', ''):
+                actual = pod.get('spec', {}).get('priorityClassName', '')
+                if actual == priority_class:
+                    return True, f"Pod 使用 PriorityClass {priority_class}"
+                return False, f"Pod PriorityClass={actual}, 期望 {priority_class}"
+        return False, f"Pod {pod_name} 不存在"
+    except:
+        return False, "解析 Pod 配置失败"
+
+def check_pvc_bound(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get pvc {name} -n {namespace} -o json")
+    if not success:
+        return False, f"PVC {name} 不存在"
+    try:
+        data = json.loads(output)
+        phase = data.get('status', {}).get('phase', '')
+        if phase == 'Bound':
+            return True, f"PVC {name} 已绑定"
+        return False, f"PVC {name} 状态: {phase}"
+    except:
+        return False, "解析 PVC 状态失败"
+
+def check_gateway(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, _ = run_kubectl(cluster, f"get gateway {name} -n {namespace}")
+    if success:
+        return True, f"Gateway {name} 存在"
+    return False, f"Gateway {name} 不存在"
+
+def check_httproute(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, _ = run_kubectl(cluster, f"get httproute {name} -n {namespace}")
+    if success:
+        return True, f"HTTPRoute {name} 存在"
+    return False, f"HTTPRoute {name} 不存在"
+
+def check_networkpolicy(cluster: str, namespace: str, name: str = None) -> Tuple[bool, str]:
+    if name:
+        success, _ = run_kubectl(cluster, f"get networkpolicy {name} -n {namespace}")
+        if success:
+            return True, f"NetworkPolicy {name} 存在"
+        return False, f"NetworkPolicy {name} 不存在"
+    else:
+        success, output = run_kubectl(cluster, f"get networkpolicy -n {namespace} -o json")
+        if success:
+            try:
+                data = json.loads(output)
+                count = len(data.get('items', []))
+                if count > 0:
+                    return True, f"Namespace {namespace} 有 {count} 个 NetworkPolicy"
+                return False, f"Namespace {namespace} 没有 NetworkPolicy"
+            except:
+                pass
+        return False, "无法获取 NetworkPolicy"
+
+def check_clusterissuer(cluster: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, "get clusterissuer -o json")
+    if not success:
+        return False, "无法获取 ClusterIssuer"
+    try:
+        data = json.loads(output)
+        count = len(data.get('items', []))
+        if count > 0:
+            return True, f"存在 {count} 个 ClusterIssuer"
+        return False, "没有 ClusterIssuer"
+    except:
+        return False, "解析 ClusterIssuer 失败"
+
+def check_configmap(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, _ = run_kubectl(cluster, f"get configmap {name} -n {namespace}")
+    if success:
+        return True, f"ConfigMap {name} 存在"
+    return False, f"ConfigMap {name} 不存在"
+
+def check_secret(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, _ = run_kubectl(cluster, f"get secret {name} -n {namespace}")
+    if success:
+        return True, f"Secret {name} 存在"
+    return False, f"Secret {name} 不存在"
+
+def check_deployment_volumes(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get deployment {name} -n {namespace} -o json")
+    if not success:
+        return False, f"Deployment {name} 不存在"
+    try:
+        data = json.loads(output)
+        volumes = data.get('spec', {}).get('template', {}).get('spec', {}).get('volumes', [])
+        has_configmap = any(v.get('configMap') for v in volumes)
+        has_secret = any(v.get('secret') for v in volumes)
+        if has_configmap and has_secret:
+            return True, f"Deployment 同时使用 ConfigMap 和 Secret"
+        errors = []
+        if not has_configmap:
+            errors.append("未使用 ConfigMap")
+        if not has_secret:
+            errors.append("未使用 Secret")
+        return False, f"Deployment: {', '.join(errors)}"
+    except:
+        return False, "解析 Deployment 配置失败"
+
+def check_calico_ready(cluster: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, "get pods -n calico-system -o json")
+    if not success:
+        return False, "Calico 未安装"
+    try:
+        data = json.loads(output)
+        pods = data.get('items', [])
+        if not pods:
+            return False, "Calico 未安装"
+        running = sum(1 for pod in pods if pod.get('status', {}).get('phase') == 'Running')
+        if running == len(pods):
+            return True, f"Calico 全部运行中 ({running}/{len(pods)})"
+        return False, f"Calico Pod 状态: {running}/{len(pods)} 运行中"
+    except:
+        return False, "解析 Calico 状态失败"
+
+def check_pod_resources(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, f"get pod -n {namespace} -o json")
+    if not success:
+        return False, "无法获取 Pod 列表"
+    try:
+        data = json.loads(output)
+        for pod in data.get('items', []):
+            if name in pod.get('metadata', {}).get('name', ''):
+                containers = pod.get('spec', {}).get('containers', [])
+                for container in containers:
+                    limits = container.get('resources', {}).get('limits', {})
+                    if limits.get('memory') or limits.get('cpu'):
+                        return True, f"Pod 已配置资源限制"
+                return False, f"Pod 未配置资源限制"
+        return False, f"Pod {name} 不存在"
+    except:
+        return False, "解析 Pod 配置失败"
+
+def check_node_ready(cluster: str) -> Tuple[bool, str]:
+    success, output = run_kubectl(cluster, "get nodes -o json")
+    if not success:
+        return False, "无法获取节点状态"
+    try:
+        data = json.loads(output)
+        nodes = data.get('items', [])
+        ready_count = 0
+        for node in nodes:
+            for cond in node.get('status', {}).get('conditions', []):
+                if cond.get('type') == 'Ready' and cond.get('status') == 'True':
+                    ready_count += 1
+        if ready_count == len(nodes):
+            return True, f"所有节点 Ready ({ready_count}/{len(nodes)})"
+        return False, f"节点状态: {ready_count}/{len(nodes)} Ready"
+    except:
+        return False, "解析节点状态失败"
+
+def check_cri_dockerd_installed(cluster: str) -> Tuple[bool, str]:
+    # 本地检查（cluster3）
+    success, _ = run_cmd("systemctl is-active cri-docker")
+    if success:
+        return True, "cri-dockerd 服务运行中"
+    return False, "cri-dockerd 服务未运行"
+
+def check_kubelet_runtime(cluster: str) -> Tuple[bool, str]:
+    success, output = run_cmd("grep 'container-runtime-endpoint' /var/lib/kubelet/config.yaml")
+    if success and 'cri-docker' in output:
+        return True, "kubelet 已配置 cri-dockerd"
+    success, output = run_cmd("ps aux | grep kubelet | grep -o 'container-runtime[^ ]*'")
+    if success and 'cri-docker' in output:
+        return True, "kubelet 进程使用 cri-dockerd"
+    return False, "kubelet 未配置 cri-dockerd"
+
+def run_cmd(cmd: str) -> tuple:
+    try:
+        result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=30)
+        return result.returncode == 0, result.stdout
+    except:
+        return False, ""
+
+# ============ 题目配置 ============
+
+QUESTIONS = {
+    "Q01": {
+        "name": "HPA Autoscale",
+        "cluster": "cluster1",
+        "namespace": "autoscale",
+        "checks": [
+            lambda c, n: check_deployment(c, n, "apache-server"),
+            lambda c, n: check_hpa(c, n, "apache-server"),
+        ]
+    },
+    "Q02": {
+        "name": "Ingress",
+        "cluster": "cluster1",
+        "namespace": "sound-repeater",
+        "checks": [
+            lambda c, n: check_deployment(c, n, "echoserver"),
+            lambda c, n: check_service(c, n, "echoserver"),
+            lambda c, n: check_ingress(c, n, "sound-repeater"),
+            lambda c, n: check_ingress_access(c, n, "example.org"),
+        ]
+    },
+    "Q03": {
+        "name": "Sidecar",
+        "cluster": "cluster1",
+        "namespace": "default",
+        "checks": [
+            lambda c, n: check_pod_running(c, n, "synergy-leverager"),
+            lambda c, n: check_pod_sidecar(c, n, "synergy-leverager"),
+            lambda c, n: check_log_file(c, n, "synergy-leverager", "synergy-leverager", "/var/log/synergy-leverager.log"),
+        ]
+    },
+    "Q04": {
+        "name": "StorageClass",
+        "cluster": "cluster1",
+        "namespace": "default",
+        "checks": [
+            lambda c, n: check_storageclass(c, "ran-local-path", True),
+        ]
+    },
+    "Q05": {
+        "name": "Service",
+        "cluster": "cluster1",
+        "namespace": "delta",
+        "checks": [
+            lambda c, n: check_deployment(c, n, "spline-reticulator-srv"),
+            lambda c, n: check_service(c, n, "spline-reticulator-srv"),
+        ]
+    },
+    "Q06": {
+        "name": "PriorityClass",
+        "cluster": "cluster1",
+        "namespace": "priority",
+        "checks": [
+            lambda c, n: check_priorityclass(c, "high-priority", 1000000),
+            lambda c, n: check_pod_priority(c, n, "priority-pod", "high-priority"),
+        ]
+    },
+    "Q07": {
+        "name": "Helm ArgoCD",
+        "cluster": "cluster1",
+        "namespace": "argocd",
+        "checks": [
+            lambda c, n: check_deployment(c, n, "argocd-server"),
+        ]
+    },
+    "Q08": {
+        "name": "PVC",
+        "cluster": "cluster1",
+        "namespace": "mariadb",
+        "checks": [
+            lambda c, n: check_pvc_bound(c, n, "mariadb-data"),
+            lambda c, n: check_pod_running(c, n, "mariadb"),
+        ]
+    },
+    "Q09": {
+        "name": "Gateway API",
+        "cluster": "cluster1",
+        "namespace": "default",
+        "checks": [
+            lambda c, n: check_gateway(c, n, "web-gateway"),
+            lambda c, n: check_httproute(c, n, "web"),
+            lambda c, n: check_ingress_deleted(c, n, "web"),
+        ]
+    },
+    "Q10": {
+        "name": "NetworkPolicy",
+        "cluster": "cluster1",
+        "namespace": "frontend",
+        "checks": [
+            lambda c, n: check_networkpolicy(c, n, "allow-backend"),
+        ]
+    },
+    "Q11": {
+        "name": "cert-manager",
+        "cluster": "cluster1",
+        "namespace": "cert-manager",
+        "checks": [
+            lambda c, n: check_deployment(c, n, "cert-manager"),
+            check_crd_list,
+            check_certificate_doc,
+        ]
+    },
+    "Q12": {
+        "name": "HTTPS ConfigMap",
+        "cluster": "cluster1",
+        "namespace": "nginx-static",
+        "checks": [
+            lambda c, n: check_configmap(c, n, "nginx-config"),
+            lambda c, n: check_secret(c, n, "tls-secret"),
+            lambda c, n: check_deployment_volumes(c, n, "nginx-static"),
+            lambda c, n: check_tls_version(c, n, "nginx-static", "nginx-static"),
+        ]
+    },
+    "Q13": {
+        "name": "Calico NetworkPolicy",
+        "cluster": "cluster2",
+        "namespace": "calico-netpol",
+        "checks": [
+            check_calico_ready,
+            lambda c, n: check_networkpolicy(c, n),
+        ]
+    },
+    "Q14": {
+        "name": "Resource Limits",
+        "cluster": "cluster1",
+        "namespace": "hollow",
+        "checks": [
+            lambda c, n: check_pod_resources(c, n, "wordpress"),
+            lambda c, n: check_pod_running(c, n, "wordpress"),
+        ]
+    },
+    "Q15": {
+        "name": "etcd Troubleshoot",
+        "cluster": "cluster3",
+        "namespace": "default",
+        "checks": [
+            lambda c, n: check_node_ready(c),
+        ]
+    },
+    "Q16": {
+        "name": "cri-dockerd",
+        "cluster": "cluster3",
+        "namespace": "default",
+        "checks": [
+            check_cri_dockerd_installed,
+            check_kubelet_runtime,
+        ]
+    },
+}
+
+# ============ 输出函数 ============
+
+def print_header():
+    width = 70
+    print()
+    print(f"{Colors.CYAN}{'=' * width}{Colors.END}")
+    print(f"{Colors.BOLD}{Colors.CYAN}{'CKA 考试评分系统 (Cluster3)':^{width}}{Colors.END}")
+    print(f"{Colors.CYAN}{'=' * width}{Colors.END}")
+    print()
+    print(f"  {Colors.DIM}考试时间:{Colors.END} {Colors.YELLOW}{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}{Colors.END}")
+    print(f"  {Colors.DIM}通过分数:{Colors.END} {Colors.GREEN}{PASSING_SCORE}/{TOTAL_SCORE}{Colors.END}")
+    print(f"  {Colors.DIM}题目数量:{Colors.END} {Colors.BLUE}{QUESTION_COUNT} 题{Colors.END}")
+    print(f"  {Colors.DIM}运行节点:{Colors.END} {Colors.MAGENTA}cluster3 (cka000016){Colors.END}")
+    print()
+
+def print_question_result(qid: str, name: str, passed: bool, details: List[str]):
+    if passed:
+        status_icon = f"{Colors.GREEN}✓{Colors.END}"
+        status_text = f"{Colors.GREEN}PASS{Colors.END}"
+        score_text = f"{Colors.GREEN}+{SCORE_PER_QUESTION:.1f}分{Colors.END}"
+    else:
+        status_icon = f"{Colors.RED}✗{Colors.END}"
+        status_text = f"{Colors.RED}FAIL{Colors.END}"
+        score_text = f"{Colors.RED}+0分{Colors.END}"
+    
+    print(f"  {Colors.BOLD}{qid}{Colors.END} {Colors.DIM}-{Colors.END} {name}")
+    print(f"  {' ' * len(qid)} {status_icon} {status_text}  {score_text}")
+    
+    for detail in details:
+        if detail.startswith("✓"):
+            icon = f"{Colors.GREEN}✓{Colors.END}"
+            text = detail[1:].strip()
+            print(f"      {icon} {Colors.DIM}{text}{Colors.END}")
+        else:
+            icon = f"{Colors.RED}✗{Colors.END}"
+            text = detail[1:].strip() if detail.startswith("✗") else detail
+            print(f"      {icon} {text}")
+    print()
+
+def print_summary(score: float, passed: int, failed: int):
+    width = 70
+    print(f"{Colors.CYAN}{'-' * width}{Colors.END}")
+    print(f"{Colors.BOLD}{'评分总结':^{width}}{Colors.END}")
+    print(f"{Colors.CYAN}{'-' * width}{Colors.END}")
+    print()
+    
+    score_pct = (score / TOTAL_SCORE) * 100
+    if score >= PASSING_SCORE:
+        score_color = Colors.GREEN
+        result_icon = "✓"
+    else:
+        score_color = Colors.RED
+        result_icon = "✗"
+    
+    print(f"  {Colors.BOLD}总得分:{Colors.END} {score_color}{score:.1f}/{TOTAL_SCORE} ({score_pct:.1f}%){Colors.END} {score_color}{result_icon}{Colors.END}")
+    print()
+    print(f"  {Colors.GREEN}● 通过题目:{Colors.END} {passed} 题")
+    print(f"  {Colors.RED}● 未通过:{Colors.END} {failed} 题")
+    print(f"  {Colors.DIM}○ 未开始:{Colors.END} {QUESTION_COUNT - passed - failed} 题")
+    print()
+    
+    print(f"{Colors.CYAN}{'-' * width}{Colors.END}")
+    if score >= PASSING_SCORE:
+        print(f"{Colors.GREEN}{Colors.BOLD}{'恭喜通过 CKA 考试！':^{width}}{Colors.END}")
+    else:
+        needed = PASSING_SCORE - score
+        print(f"{Colors.YELLOW}{f'还需 {needed:.1f} 分通过考试':^{width}}{Colors.END}")
+    print(f"{Colors.CYAN}{'-' * width}{Colors.END}")
+    print()
+    print(f"  {Colors.DIM}评分规则:{Colors.END}")
+    print(f"  • 每题满分 {SCORE_PER_QUESTION:.2f} 分")
+    print(f"  • 全对得分，错一个检查点不得分")
+    print()
+
+def main():
+    print_header()
+    
+    total_score = 0.0
+    passed_count = 0
+    failed_count = 0
+    
+    for qid, config in QUESTIONS.items():
+        cluster = config["cluster"]
+        namespace = config["namespace"]
+        name = config["name"]
+        checks = config["checks"]
+        
+        details = []
+        all_passed = True
+        
+        for check in checks:
+            try:
+                if check.__name__ in ['check_calico_ready', 'check_cri_dockerd_installed', 
+                                       'check_kubelet_runtime', 'check_crd_list', 'check_certificate_doc']:
+                    passed, msg = check(cluster)
+                else:
+                    passed, msg = check(cluster, namespace)
+                
+                if passed:
+                    details.append(f"✓ {msg}")
+                else:
+                    details.append(f"✗ {msg}")
+                    all_passed = False
+            except Exception as e:
+                details.append(f"✗ 检查异常: {str(e)}")
+                all_passed = False
+        
+        if all_passed:
+            total_score += SCORE_PER_QUESTION
+            passed_count += 1
+        else:
+            failed_count += 1
+        
+        print_question_result(qid, name, all_passed, details)
+    
+    print_summary(total_score, passed_count, failed_count)
+    return 0 if total_score >= PASSING_SCORE else 1
+
+if __name__ == "__main__":
+    sys.exit(main())

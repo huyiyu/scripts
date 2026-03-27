@@ -41,12 +41,10 @@
 # ==========================================
 # 2. 将公钥添加到所有 CKA 用户
 # ==========================================
-- name: "确保 CKA 用户 .ssh 目录存在"
+- name: "确保 CKA 用户 .ssh 目录存在（用户可能还未创建，不设置owner）"
   file:
     path: "/home/{{ item }}/.ssh"
     state: directory
-    owner: "{{ item }}"
-    group: "{{ item }}"
     mode: '0700'
   loop:
     - cka000050
@@ -67,13 +65,11 @@
     - cka000016
   ignore_errors: yes
 
-- name: "添加公钥到 CKA 用户 authorized_keys"
+- name: "添加公钥到 CKA 用户 authorized_keys（用户可能还未创建，不设置owner）"
   lineinfile:
     path: "/home/{{ item }}/.ssh/authorized_keys"
     line: "{{ cka_ssh_public_key }}"
     create: yes
-    owner: "{{ item }}"
-    group: "{{ item }}"
     mode: '0600'
   loop:
     - cka000050

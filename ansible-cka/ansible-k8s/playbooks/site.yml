@@ -7,5 +7,5 @@
   vars:
     init_cka_env: true
   roles:
-    - kubernetes
+    # - kubernetes
     - question

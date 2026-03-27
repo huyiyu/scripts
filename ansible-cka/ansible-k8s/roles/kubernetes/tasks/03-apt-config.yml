@@ -29,4 +29,6 @@
       - libmnl0
       - libnfnetlink0
       - libnetfilter-conntrack3
+      - htop
+      - bash-completion
     state: present

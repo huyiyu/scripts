@@ -103,3 +103,47 @@
   loop: "{{ k8s_version_check.results }}"
   loop_control:
     label: "{{ item.item }}"
+
+# ==========================================
+# 4. 安装 crictl（从 /opt 或离线包）
+# ==========================================
+- name: "检查 /opt 目录是否存在 crictl"
+  find:
+    paths: "/opt"
+    patterns: "crictl*"
+    file_type: file
+  register: opt_crictl_files
+  ignore_errors: yes
+
+- name: "从 /opt 复制 crictl 到系统目录"
+  copy:
+    src: "{{ item.path }}"
+    dest: "/usr/local/bin/crictl"
+    mode: '0755'
+    remote_src: yes
+  with_items: "{{ opt_crictl_files.files }}"
+  when: opt_crictl_files.files | length > 0
+
+- name: "检查离线包目录是否存在 crictl"
+  stat:
+    path: "{{ offline_packages_path }}/k8s/crictl-v1.34.0-linux-amd64.tar.gz"
+  register: crictl_package
+
+- name: "从离线包解压安装 crictl"
+  unarchive:
+    src: "{{ offline_packages_path }}/k8s/crictl-v1.34.0-linux-amd64.tar.gz"
+    dest: "/usr/local/bin"
+    remote_src: yes
+    mode: '0755'
+  when: crictl_package.stat.exists
+
+- name: "配置 crictl 使用 containerd"
+  copy:
+    content: |
+      runtime-endpoint: unix:///run/containerd/containerd.sock
+      image-endpoint: unix:///run/containerd/containerd.sock
+      timeout: 10
+      debug: false
+    dest: "/etc/crictl.yaml"
+    mode: '0644'
+  ignore_errors: yes

@@ -1,0 +1,218 @@
+---
+# Score role 默认配置
+
+# 通过分数线
+score_passing_threshold: 66
+
+# 总分数
+total_score: 100
+
+# 每道题的得分（100/16 = 6.25，但按题给分）
+# 实际上按得分点检查，每题全对才给分
+
+# 集群 kubeconfig 路径
+kubeconfig_cluster1: /etc/kubernetes/admin.conf
+kubeconfig_cluster2: /root/.kube/cluster2-config
+kubeconfig_cluster3: /root/.kube/cluster3-config
+
+# 各题得分点配置
+score_questions:
+  q01:
+    name: "Q01 - HPA Autoscale"
+    cluster: "cluster1"
+    namespace: "autoscale"
+    points:
+      - name: "Deployment apache-server 存在"
+        check: "deployment"
+        resource: "apache-server"
+      - name: "HPA 存在且目标正确"
+        check: "hpa"
+        resource: "apache-server"
+      - name: "HPA 最小副本数=1, 最大=2, CPU阈值=50%"
+        check: "hpa_config"
+        
+  q02:
+    name: "Q02 - Ingress"
+    cluster: "cluster1"
+    namespace: "sound-repeater"
+    points:
+      - name: "Deployment echoserver 存在"
+        check: "deployment"
+        resource: "echoserver"
+      - name: "Service echoserver 存在且类型正确"
+        check: "service"
+        resource: "echoserver"
+      - name: "Ingress sound-repeater 存在且配置正确"
+        check: "ingress"
+        resource: "sound-repeater"
+        
+  q03:
+    name: "Q03 - Taints"
+    cluster: "cluster1"
+    namespace: "default"
+    points:
+      - name: "Pod synergy-leverager 存在且运行中"
+        check: "pod_running"
+        resource: "synergy-leverager"
+        
+  q04:
+    name: "Q04 - etcd Backup"
+    cluster: "cluster1"
+    namespace: "one"
+    points:
+      - name: "Secret etcd-backup 存在且包含备份数据"
+        check: "secret"
+        resource: "etcd-backup"
+      - name: "Pod etcd-check 运行中（验证恢复成功）"
+        check: "pod_running"
+        resource: "etcd-check"
+        
+  q05:
+    name: "Q05 - Service"
+    cluster: "cluster1"
+    namespace: "delta"
+    points:
+      - name: "Deployment spline-reticulator-srv 存在"
+        check: "deployment"
+        resource: "spline-reticulator-srv"
+      - name: "Service spline-reticulator-srv 存在且类型为NodePort"
+        check: "service_nodeport"
+        resource: "spline-reticulator-srv"
+      - name: "NodePort 端口为 31080"
+        check: "nodeport_port"
+        port: 31080
+        
+  q06:
+    name: "Q06 - PriorityClass"
+    cluster: "cluster1"
+    namespace: "priority"
+    points:
+      - name: "PriorityClass high-priority 存在且值为1000000"
+        check: "priorityclass"
+        resource: "high-priority"
+        value: 1000000
+      - name: "Pod priority-pod 使用 high-priority"
+        check: "pod_priority"
+        resource: "priority-pod"
+        
+  q07:
+    name: "Q07 - Helm ArgoCD"
+    cluster: "cluster1"
+    namespace: "argocd"
+    points:
+      - name: "ArgoCD 部署存在且运行中"
+        check: "deployment"
+        resource: "argocd-server"
+      - name: "Service argocd-server 存在"
+        check: "service"
+        resource: "argocd-server"
+        
+  q08:
+    name: "Q08 - PVC"
+    cluster: "cluster1"
+    namespace: "mariadb"
+    points:
+      - name: "PVC mariadb-data 存在且状态为Bound"
+        check: "pvc_bound"
+        resource: "mariadb-data"
+      - name: "Pod mariadb 使用 PVC 且运行中"
+        check: "pod_using_pvc"
+        resource: "mariadb"
+        
+  q09:
+    name: "Q09 - Gateway API"
+    cluster: "cluster1"
+    namespace: "default"
+    points:
+      - name: "Gateway web-gateway 存在且配置正确"
+        check: "gateway"
+        resource: "web-gateway"
+      - name: "HTTPRoute web 存在且指向正确"
+        check: "httproute"
+        resource: "web"
+      - name: "原有 Ingress web 已删除"
+        check: "ingress_deleted"
+        resource: "web"
+        
+  q10:
+    name: "Q10 - NetworkPolicy"
+    cluster: "cluster1"
+    namespace: "frontend"
+    points:
+      - name: "NetworkPolicy allow-backend 存在"
+        check: "networkpolicy"
+        resource: "allow-backend"
+      - name: "frontend 可以访问 backend"
+        check: "connectivity"
+        
+  q11:
+    name: "Q11 - cert-manager"
+    cluster: "cluster1"
+    namespace: "cert-manager"
+    points:
+      - name: "cert-manager 已部署且 Pod 运行中"
+        check: "deployment"
+        resource: "cert-manager"
+      - name: "ClusterIssuer 存在"
+        check: "clusterissuer"
+        
+  q12:
+    name: "Q12 - HTTPS ConfigMap"
+    cluster: "cluster1"
+    namespace: "k8snginx"
+    points:
+      - name: "ConfigMap nginx-config 存在且配置正确"
+        check: "configmap"
+        resource: "nginx-config"
+      - name: "Secret tls-secret 存在"
+        check: "secret"
+        resource: "tls-secret"
+      - name: "Deployment nginx-static 使用 ConfigMap 和 Secret"
+        check: "deployment_volumes"
+        resource: "nginx-static"
+        
+  q13:
+    name: "Q13 - Calico NetworkPolicy"
+    cluster: "cluster2"
+    namespace: "calico-netpol"
+    points:
+      - name: "Calico 已安装且节点 Ready"
+        check: "calico_ready"
+      - name: "NetworkPolicy 配置正确"
+        check: "networkpolicy"
+        
+  q14:
+    name: "Q14 - Resource Limits"
+    cluster: "cluster1"
+    namespace: "hollow"
+    points:
+      - name: "WordPress Pod 资源限制已调整"
+        check: "pod_resources"
+        resource: "wordpress"
+      - name: "Pod 状态为 Running"
+        check: "pod_running"
+        resource: "wordpress"
+        
+  q15:
+    name: "Q15 - etcd 故障排查"
+    cluster: "cluster3"
+    namespace: "default"
+    points:
+      - name: "kube-apiserver 正常运行"
+        check: "component_status"
+        component: "kube-apiserver"
+      - name: "kube-scheduler 正常运行"
+        check: "component_status"
+        component: "kube-scheduler"
+      - name: "节点状态为 Ready"
+        check: "node_ready"
+        
+  q16:
+    name: "Q16 - cri-dockerd"
+    cluster: "cluster3"
+    namespace: "default"
+    points:
+      - name: "cri-dockerd 已安装"
+        check: "cri_dockerd_installed"
+      - name: "kubelet 使用 cri-dockerd 运行时"
+        check: "kubelet_runtime"

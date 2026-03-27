@@ -1,0 +1,257 @@
+---
+# Score role - 部署 CKA 评分脚本到 cluster3 (cka000016 用户)
+
+- name: "检查是否在 cluster3 上运行"
+  fail:
+    msg: "评分脚本只能在 cluster3 上部署给 cka000016 用户"
+  when: "'cluster3' not in group_names"
+
+# ==========================================
+# 1. 从 cluster1 读取配置
+# ==========================================
+- name: "从 cluster1 读取 admin.conf"
+  slurp:
+    src: /etc/kubernetes/admin.conf
+  delegate_to: k8s-node01
+  register: cluster1_admin_conf
+
+- name: "从 cluster1 读取 SSH 私钥"
+  slurp:
+    src: /root/.ssh/cka_ed25519
+  delegate_to: k8s-node01
+  register: cka_ssh_key
+
+- name: "从 cluster1 读取 SSH 公钥"
+  slurp:
+    src: /root/.ssh/cka_ed25519.pub
+  delegate_to: k8s-node01
+  register: cka_ssh_pubkey
+
+# ==========================================
+# 2. 生成本地评分脚本
+# ==========================================
+- name: "创建临时目录"
+  file:
+    path: /tmp/cka-score
+    state: directory
+  delegate_to: localhost
+  run_once: true
+
+- name: "生成本地评分脚本"
+  template:
+    src: cka-score.py.j2
+    dest: /tmp/cka-score/cka-score.py
+    mode: '0755'
+  delegate_to: localhost
+  run_once: true
+
+- name: "读取评分脚本内容"
+  slurp:
+    src: /tmp/cka-score/cka-score.py
+  delegate_to: localhost
+  register: score_script_content
+  run_once: true
+
+# ==========================================
+# 3. 部署到 cka000016 用户目录
+# ==========================================
+- name: "创建 cka000016 用户目录"
+  file:
+    path: "/home/cka000016"
+    state: directory
+    owner: cka000016
+    group: cka000016
+    mode: '0755'
+
+- name: "创建 .kube 目录"
+  file:
+    path: "/home/cka000016/.kube"
+    state: directory
+    owner: cka000016
+    group: cka000016
+    mode: '0700'
+
+- name: "部署 cluster1 kubeconfig"
+  copy:
+    content: "{{ cluster1_admin_conf.content | b64decode }}"
+    dest: "/home/cka000016/.kube/cluster1-config"
+    owner: cka000016
+    group: cka000016
+    mode: '0600'
+
+- name: "部署 cluster2 kubeconfig (修改 server 地址)"
+  copy:
+    content: "{{ cluster1_admin_conf.content | b64decode | replace('11.0.1.100:6443', '11.0.1.101:6443') }}"
+    dest: "/home/cka000016/.kube/cluster2-config"
+    owner: cka000016
+    group: cka000016
+    mode: '0600'
+
+- name: "部署 cluster3 kubeconfig"
+  copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/home/cka000016/.kube/config"
+    owner: cka000016
+    group: cka000016
+    mode: '0600'
+    remote_src: yes
+
+- name: "部署评分脚本"
+  copy:
+    content: "{{ score_script_content.content | b64decode }}"
+    dest: "/home/cka000016/cka-score.py"
+    owner: cka000016
+    group: cka000016
+    mode: '0755'
+
+# ==========================================
+# 4. 配置 hosts 文件
+# ==========================================
+- name: "配置 /etc/hosts"
+  blockinfile:
+    path: /etc/hosts
+    block: |
+      # CKA 考试环境 - 集群节点
+      11.0.1.100 cluster1 kubernetes cluster1-endpoint
+      11.0.1.101 cluster2 
+      11.0.1.102 cluster3
+      # CKA 题目域名 - 指向 cluster1 Ingress
+      11.0.1.100 example.org
+      11.0.1.100 gateway.web.k8s.local
+      11.0.1.100 ingress.web.k8s.local
+      11.0.1.100 web.k8snginx.local
+    marker: "# {mark} CKA MANAGED BLOCK"
+
+# ==========================================
+# 5. 创建 SSH 配置和密钥
+# ==========================================
+- name: "创建 .ssh 目录"
+  file:
+    path: "/home/cka000016/.ssh"
+    state: directory
+    owner: cka000016
+    group: cka000016
+    mode: '0700'
+
+- name: "部署 SSH 私钥"
+  copy:
+    content: "{{ cka_ssh_key.content | b64decode }}"
+    dest: "/home/cka000016/.ssh/cka_ed25519"
+    owner: cka000016
+    group: cka000016
+    mode: '0600'
+
+- name: "部署 SSH 公钥"
+  copy:
+    content: "{{ cka_ssh_pubkey.content | b64decode }}"
+    dest: "/home/cka000016/.ssh/cka_ed25519.pub"
+    owner: cka000016
+    group: cka000016
+    mode: '0644'
+
+- name: "部署 SSH config"
+  copy:
+    content: |
+      # Question 1-12 (cluster1)
+      Host cka000050 cka000024 cka000037 cka000046 cka000025 cka000049 cka000060 cka000023 cka000029 cka000031 cka000011 cka000012 cka000014
+          HostName 11.0.1.100
+          User cka000050
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 13 (cluster2)
+      Host cka000013
+          HostName 11.0.1.101
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 15-16 (cluster3 - localhost)
+      Host cka000015 cka000016
+          HostName 127.0.0.1
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Cluster aliases
+      Host cluster1
+          HostName 11.0.1.100
+          User root
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      Host cluster2
+          HostName 11.0.1.101
+          User root
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      Host cluster3
+          HostName 127.0.0.1
+          User root
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+    dest: "/home/cka000016/.ssh/config"
+    owner: cka000016
+    group: cka000016
+    mode: '0600'
+
+# ==========================================
+# 6. 创建评分快捷命令
+# ==========================================
+- name: "创建评分快捷命令"
+  copy:
+    content: |
+      #!/bin/bash
+      # CKA 评分脚本
+      export KUBECONFIG=/home/cka000016/.kube/config
+      python3 /home/cka000016/cka-score.py
+    dest: "/usr/local/bin/cka-score"
+    mode: '0755'
+
+# ==========================================
+# 7. 显示 SSH 信息
+# ==========================================
+- name: "显示 SSH 私钥"
+  debug:
+    msg:
+      - "========================================="
+      - "CKA SSH 私钥 (cka_ed25519)"
+      - "========================================="
+      - "{{ cka_ssh_key.content | b64decode }}"
+      - "========================================="
+
+- name: "显示 SSH 公钥"
+  debug:
+    msg:
+      - "CKA SSH 公钥 (cka_ed25519.pub)"
+      - "========================================="
+      - "{{ cka_ssh_pubkey.content | b64decode }}"
+      - "========================================="
+
+- name: "显示部署信息"
+  debug:
+    msg:
+      - ""
+      - "========================================="
+      - "CKA 评分系统部署完成"
+      - "========================================="
+      - ""
+      - "用户: cka000016"
+      - "位置: cluster3 (11.0.1.102)"
+      - ""
+      - "文件位置:"
+      - "  评分脚本: /home/cka000016/cka-score.py"
+      - "  SSH私钥:  /home/cka000016/.ssh/cka_ed25519"
+      - "  SSH公钥:  /home/cka000016/.ssh/cka_ed25519.pub"
+      - "  SSH配置:  /home/cka000016/.ssh/config"
+      - "  Kubeconfig:"
+      - "    - cluster1: /home/cka000016/.kube/cluster1-config"
+      - "    - cluster2: /home/cka000016/.kube/cluster2-config"
+      - "    - cluster3: /home/cka000016/.kube/config"
+      - ""
+      - "使用方法:"
+      - "  ssh cka000016@11.0.1.102"
+      - "  cka-score"
+      - ""
+      - "或从 cluster1 连接:"
+      - "  ssh -i ~/.ssh/cka_ed25516 cka000016@11.0.1.102"
+      - "========================================="

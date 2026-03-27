@@ -159,9 +159,11 @@
 # ==========================================
 # 2. 部署 Nginx 反向代理 (Systemd)
 # ==========================================
-- name: 安装 Nginx
+- name: 安装 Nginx 及 Stream 模块
   apt:
-    name: nginx
+    name:
+      - nginx
+      - libnginx-mod-stream
     state: present
     update_cache: yes
 
