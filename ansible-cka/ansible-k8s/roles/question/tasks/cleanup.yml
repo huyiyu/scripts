@@ -31,16 +31,16 @@
     state: absent
     remove: yes
   loop:
-    - cka000050  # Q1
-    - cka000024  # Q2
-    - cka000037  # Q3
-    - cka000046  # Q4
-    - cka000025  # Q5
-    - cka000049  # Q6
-    - cka000060  # Q7
-    - cka000023  # Q8
-    - cka000029  # Q9
-    - cka000031  # Q10
+    - cka000001  # Q1
+    - cka000002  # Q2
+    - cka000003  # Q3
+    - cka000004  # Q4
+    - cka000005  # Q5
+    - cka000006  # Q6
+    - cka000007  # Q7
+    - cka000008  # Q8
+    - cka000009  # Q9
+    - cka000010  # Q10
     - cka000011  # Q11
     - cka000012  # Q12
     - cka000013  # Q13
@@ -54,16 +54,16 @@
     path: "/home/{{ item }}"
     state: absent
   loop:
-    - cka000050
-    - cka000024
-    - cka000037
-    - cka000046
-    - cka000025
-    - cka000049
-    - cka000060
-    - cka000023
-    - cka000029
-    - cka000031
+    - cka000001
+    - cka000002
+    - cka000003
+    - cka000004
+    - cka000005
+    - cka000006
+    - cka000007
+    - cka000008
+    - cka000009
+    - cka000010
     - cka000011
     - cka000012
     - cka000013

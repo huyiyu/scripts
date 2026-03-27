@@ -10,7 +10,7 @@
   import_tasks: manage-student-user.yml
   vars:
     student_namespace: "{{ question2_namespace | default('sound-repeater') }}"
-    student_user: "{{ question2_student_user | default('cka-sound-repeater') }}"
+    student_user: "{{ question2_student_user | default('cka000002') }}"
     student_home: "{{ question2_student_home | default('/home/cka-sound-repeater') }}"
 
 # ==========================================

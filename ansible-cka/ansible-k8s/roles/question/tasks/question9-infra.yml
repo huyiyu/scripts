@@ -93,7 +93,36 @@
   ignore_errors: yes
 
 # ==========================================
-# 5. 创建 Web 应用程序资源
+# 5. 确保 GatewayClass 存在
+# ==========================================
+- name: "等待并检查 GatewayClass 是否存在"
+  shell: |
+    for i in {1..10}; do
+      kubectl get gatewayclass nginx 2>/dev/null && exit 0
+      sleep 3
+    done
+    exit 1
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+  changed_when: false
+
+- name: "手动创建 GatewayClass（如果 Helm 未创建）"
+  shell: |
+    cat << 'EOF' | kubectl apply -f -
+    apiVersion: gateway.networking.k8s.io/v1
+    kind: GatewayClass
+    metadata:
+      name: nginx
+    spec:
+      controllerName: gateway.nginx.org/nginx-gateway-controller
+    EOF
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  ignore_errors: yes
+
+# ==========================================
+# 6. 创建 Web 应用程序资源
 # ==========================================
 - name: "创建 web Deployment"
   shell: |
@@ -115,7 +144,7 @@
         spec:
           containers:
             - name: nginx
-              image: registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm
+              image: docker.io/library/httpd:latest
               ports:
                 - containerPort: 80
     EOF
@@ -149,7 +178,7 @@
   changed_when: false
 
 # ==========================================
-# 6. 创建 TLS 证书和 Secret
+# 7. 创建 TLS 证书和 Secret
 # ==========================================
 - name: "生成自签名 TLS 证书"
   shell: |
@@ -185,7 +214,7 @@
   ignore_errors: yes
 
 # ==========================================
-# 7. 创建现有 Ingress（供考生迁移）
+# 9. 创建现有 Ingress（供考生迁移）
 # ==========================================
 - name: "创建 Ingress web（供考生迁移）"
   shell: |
@@ -227,7 +256,7 @@
   ignore_errors: yes
 
 # ==========================================
-# 8. 添加 hosts 解析
+# 10. 添加 hosts 解析
 # ==========================================
 - name: "添加域名解析到 hosts"
   lineinfile:
@@ -237,9 +266,10 @@
   loop:
     - "127.0.0.1 ingress.web.k8s.local"
     - "127.0.0.1 gateway.web.k8s.local"
+    - "11.0.1.100 gateway.web.k8s.local"
 
 # ==========================================
-# 9. 显示基础设施信息
+# 11. 显示基础设施信息
 # ==========================================
 - name: "显示 Question 9 基础设施部署完成信息"
   debug:
@@ -250,6 +280,8 @@
       - "已部署："
       - "- GatewayClass: nginx"
       - "- NGINX Gateway Fabric (Helm OCI 安装, nginx-gateway namespace)"
+      - "- Gateway: web-gateway (HTTP:80)"
+      - "- HTTPRoute: web"
       - "- Deployment: web (default namespace)"
       - "- Service: web:80"
       - "- Secret: web-cert (TLS 证书)"

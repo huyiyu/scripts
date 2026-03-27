@@ -37,6 +37,23 @@
     group: "{{ _student_user }}"
     mode: '0700'
 
+- name: "读取 CKA SSH 公钥"
+  slurp:
+    src: /root/.ssh/cka_ed25519.pub
+  register: cka_public_key
+  delegate_to: localhost
+  become: yes
+  run_once: true
+
+- name: "添加公钥到用户 authorized_keys"
+  lineinfile:
+    path: "{{ _student_home }}/.ssh/authorized_keys"
+    line: "{{ cka_public_key.content | b64decode | trim }}"
+    create: yes
+    owner: "{{ _student_user }}"
+    group: "{{ _student_user }}"
+    mode: '0600'
+
 - name: "修复 authorized_keys 权限"
   file:
     path: "{{ _student_home }}/.ssh/authorized_keys"
@@ -53,6 +70,33 @@
     owner: "{{ _student_user }}"
     group: "{{ _student_user }}"
     mode: '0755'
+
+- name: "授予 {{ _student_user }} 受限 sudo 权限"
+  copy:
+    content: |
+      # CKA 考试用户 {{ _student_user }} - 受限权限
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/kubectl
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/local/bin/kubectl
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/local/bin/helm
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/local/bin/crictl
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /bin/systemctl
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/journalctl
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/apt
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/apt-get
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/dpkg
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /bin/cat
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/cat
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /bin/ls
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/ls
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /bin/grep
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/grep
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/vim
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/vi
+      {{ _student_user }} ALL=(ALL) NOPASSWD: /usr/bin/nano
+    dest: "/etc/sudoers.d/{{ _student_user }}"
+    mode: '0440'
+    validate: 'visudo -cf %s'
 
 # ==========================================
 # 2. 创建 Namespace(s) 和 ServiceAccount

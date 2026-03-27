@@ -107,23 +107,6 @@
 # ==========================================
 # 4. 安装 crictl（从 /opt 或离线包）
 # ==========================================
-- name: "检查 /opt 目录是否存在 crictl"
-  find:
-    paths: "/opt"
-    patterns: "crictl*"
-    file_type: file
-  register: opt_crictl_files
-  ignore_errors: yes
-
-- name: "从 /opt 复制 crictl 到系统目录"
-  copy:
-    src: "{{ item.path }}"
-    dest: "/usr/local/bin/crictl"
-    mode: '0755'
-    remote_src: yes
-  with_items: "{{ opt_crictl_files.files }}"
-  when: opt_crictl_files.files | length > 0
-
 - name: "检查离线包目录是否存在 crictl"
   stat:
     path: "{{ offline_packages_path }}/k8s/crictl-v1.34.0-linux-amd64.tar.gz"

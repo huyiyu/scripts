@@ -39,54 +39,29 @@
   run_once: true
 
 # ==========================================
-# 2. 将公钥添加到所有 CKA 用户
+# 2. 导入 CKA 题目镜像
 # ==========================================
-- name: "确保 CKA 用户 .ssh 目录存在（用户可能还未创建，不设置owner）"
-  file:
-    path: "/home/{{ item }}/.ssh"
-    state: directory
-    mode: '0700'
-  loop:
-    - cka000050
-    - cka000024
-    - cka000037
-    - cka000046
-    - cka000025
-    - cka000049
-    - cka000060
-    - cka000023
-    - cka000029
-    - cka000031
-    - cka000011
-    - cka000012
-    - cka000013
-    - cka000014
-    - cka000015
-    - cka000016
+- name: 复制 CKA 题目镜像包到目标节点
+  copy:
+    src: "{{ offline_images_path }}/{{ cka_images_package }}"
+    dest: "/tmp/{{ cka_images_package }}"
+    mode: '0644'
+    remote_src: yes
+  when: cka_images_tar.stat.exists | default(false)
+
+- name: 导入 CKA 题目镜像到 containerd
+  shell: |
+    ctr -n k8s.io images import /tmp/{{ cka_images_package }}
+  when: cka_images_tar.stat.exists | default(false)
   ignore_errors: yes
 
-- name: "添加公钥到 CKA 用户 authorized_keys（用户可能还未创建，不设置owner）"
-  lineinfile:
-    path: "/home/{{ item }}/.ssh/authorized_keys"
-    line: "{{ cka_ssh_public_key }}"
-    create: yes
-    mode: '0600'
-  loop:
-    - cka000050
-    - cka000024
-    - cka000037
-    - cka000046
-    - cka000025
-    - cka000049
-    - cka000060
-    - cka000023
-    - cka000029
-    - cka000031
-    - cka000011
-    - cka000012
-    - cka000013
-    - cka000014
-    - cka000015
-    - cka000016
-  ignore_errors: yes
-  notify: "显示 SSH 信息"
+
+- name: 列出已导入的 CKA 题目镜像
+  shell: |
+    ctr -n k8s.io images list | grep -E "(traefik|local-path-provisioner|busybox|echoserver|httpd)" || true
+  register: imported_cka_images
+  changed_when: false
+
+- name: 显示已导入的 CKA 题目镜像
+  debug:
+    msg: "{{ imported_cka_images.stdout_lines }}"

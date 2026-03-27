@@ -15,7 +15,7 @@
   import_tasks: manage-student-user.yml
   vars:
     student_namespace: "cka-system"
-    student_user: "{{ question4_student_user | default('cka-storage') }}"
+    student_user: "{{ question4_student_user | default('cka000004') }}"
     student_home: "{{ question4_student_home | default('/home/cka-storage') }}"
     is_cluster_level: true
 

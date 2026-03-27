@@ -35,7 +35,7 @@ log_error() {
 }
 
 log_step() {
-    echo -e "${CYAN}[STEP $1/6]${NC} $2"
+    echo -e "${CYAN}[STEP $1/5]${NC} $2"
 }
 
 # 是否强制重新下载
@@ -199,11 +199,11 @@ download_tools() {
         "" \
         "helm v3.18.4"
     
-    # 下载 cri-dockerd（用于 CKA Q16）
+    # 下载 cri-dockerd（用于 CKA Q16）- 使用 debian-bookworm 版本兼容 Ubuntu 24.04
     download_file \
-        "https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.6/cri-dockerd_0.3.6.3-0.ubuntu-jammy_amd64.deb" \
+        "https://github.com/Mirantis/cri-dockerd/releases/download/v0.3.24/cri-dockerd_0.3.24.3-0.debian-bookworm_amd64.deb" \
         "" \
-        "cri-dockerd v0.3.6"
+        "cri-dockerd v0.3.24"
 }
 
 # 下载 Kubernetes 二进制文件（kubelet, kubectl, kubeadm）
@@ -263,15 +263,6 @@ download_calico() {
 }
 
 
-
-# 基础依赖包不再离线准备，部署时直接使用 apt 安装
-# 请确保目标节点已配置可用的 apt 源（内网源或在线源）
-download_base_packages() {
-    log_step "7" "依赖包说明"
-    log_info "基础依赖包不再离线准备，将在部署时通过 apt 直接安装"
-    log_info "请确保目标节点已配置可用的 apt 源（内网源或在线源）"
-    log_info "需要安装的包: iptables, ipset, ipvsadm, conntrack, ethtool, socat 等"
-}
 
 # 导出镜像（幂等性：检查 tar 包是否已存在）
 export_images() {
@@ -370,15 +361,14 @@ export_images() {
             "public.ecr.aws/docker/library/redis:7.4.1-alpine"
             # Gateway API (Q9)
             "ghcr.io/nginx/nginx-gateway-fabric:2.4.2"
+            "ghcr.io/nginx/nginx-gateway-fabric/nginx:2.4.2"
             # cert-manager (Q11)
             "quay.io/jetstack/cert-manager-controller:v1.13.0"
             "quay.io/jetstack/cert-manager-cainjector:v1.13.0"
             "quay.io/jetstack/cert-manager-webhook:v1.13.0"
             # 题目镜像 (阿里云镜像仓库)
-            "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox-unstable"
-            "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28"
             "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:echoserver"
-            "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+            "docker.io/library/httpd:latest"
             # Q12 ConfigMap TLS
             "docker.io/library/nginx:alpine"
             # Q14 WordPress Resources
@@ -489,7 +479,6 @@ main() {
     download_k8s_binaries
     download_cni
     download_calico
-    download_base_packages
     export_images
     show_summary
 }

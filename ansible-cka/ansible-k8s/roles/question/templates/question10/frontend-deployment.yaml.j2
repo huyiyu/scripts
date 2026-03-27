@@ -15,6 +15,6 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: {{ question10_image | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm') }}
+          image: {{ question10_image | default('docker.io/library/httpd:latest') }}
           ports:
             - containerPort: 80

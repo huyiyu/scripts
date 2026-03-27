@@ -16,7 +16,7 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: {{ question6_image_nginx | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm') }}
+          image: {{ question6_image_nginx | default('docker.io/library/httpd:latest') }}
           imagePullPolicy: IfNotPresent
 ---
 apiVersion: apps/v1
@@ -36,7 +36,7 @@ spec:
     spec:
       containers:
         - name: redis
-          image: {{ question6_image_busybox | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28') }}
+          image: {{ question6_image_busybox | default('docker.io/library/busybox:stable') }}
           imagePullPolicy: IfNotPresent
           args:
             - /bin/sh

@@ -1,11 +1,20 @@
 ---
-# 部署三个独立的 Kubernetes 单节点集群 - 离线版本
+# CKA 考试环境部署
+# - 部署 Kubernetes 集群到所有节点
+# - 部署题目环境到对应集群
+# - 评分脚本仅在 cluster3 部署
 
-- name: 部署 Kubernetes 单节点集群
+- name: 部署 Kubernetes 集群和 CKA 题目
   hosts: all
   become: yes
   vars:
     init_cka_env: true
   roles:
-    # - kubernetes
+    - kubernetes
     - question
+
+- name: 部署 CKA 评分系统（仅在 cluster3）
+  hosts: cluster3
+  become: yes
+  roles:
+    - score

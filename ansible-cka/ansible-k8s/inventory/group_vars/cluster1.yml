@@ -7,90 +7,90 @@
 # Question 1 配置 (autoscale namespace)
 # ==========================================
 question1_enabled: true
-question1_student_user: "cka000050"
-question1_student_home: "/home/cka000050"
+question1_student_user: "cka000001"
+question1_student_home: "/home/cka000001"
 question1_namespace: "autoscale"
 question1_deployment: "apache-server"
-question1_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+question1_image: "docker.io/library/httpd:latest"
 
 # ==========================================
 # Question 2 配置 (sound-repeater namespace)
 # ==========================================
 question2_enabled: true
-question2_student_user: "cka000024"
-question2_student_home: "/home/cka000024"
+question2_student_user: "cka000002"
+question2_student_home: "/home/cka000002"
 question2_namespace: "sound-repeater"
 
 # ==========================================
 # Question 3 配置 (default namespace)
 # ==========================================
 question3_enabled: true
-question3_student_user: "cka000037"
-question3_student_home: "/home/cka000037"
+question3_student_user: "cka000003"
+question3_student_home: "/home/cka000003"
 question3_namespace: "default"
 
 # ==========================================
 # Question 4 配置 (集群级别 - StorageClass)
 # ==========================================
 question4_enabled: true
-question4_student_user: "cka000046"
-question4_student_home: "/home/cka000046"
+question4_student_user: "cka000004"
+question4_student_home: "/home/cka000004"
 
 # ==========================================
 # Question 5 配置 (spline-reticulator namespace)
 # ==========================================
 question5_enabled: true
-question5_student_user: "cka000025"
-question5_student_home: "/home/cka000025"
+question5_student_user: "cka000005"
+question5_student_home: "/home/cka000005"
 question5_namespace: "spline-reticulator"
-question5_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+question5_image: "docker.io/library/httpd:latest"
 
 # ==========================================
 # Question 6 配置 (priority namespace)
 # ==========================================
 question6_enabled: true
-question6_student_user: "cka000049"
-question6_student_home: "/home/cka000049"
+question6_student_user: "cka000006"
+question6_student_home: "/home/cka000006"
 question6_namespace: "priority"
-question6_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28"
-question6_image_nginx: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+question6_image: "docker.io/library/busybox:stable"
+question6_image_nginx: "docker.io/library/httpd:latest"
 
 # ==========================================
 # Question 7 配置 (argocd namespace)
 # ==========================================
 question7_enabled: true
-question7_student_user: "cka000060"
-question7_student_home: "/home/cka000060"
+question7_student_user: "cka000007"
+question7_student_home: "/home/cka000007"
 question7_namespace: "argocd"
 
 # ==========================================
 # Question 8 配置 (mariadb namespace)
 # ==========================================
 question8_enabled: true
-question8_student_user: "cka000023"
-question8_student_home: "/home/cka000023"
+question8_student_user: "cka000008"
+question8_student_home: "/home/cka000008"
 question8_namespace: "mariadb"
-question8_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28"
+question8_image: "docker.io/library/busybox:stable"
 
 # ==========================================
 # Question 9 配置 (default namespace)
 # ==========================================
 question9_enabled: true
-question9_student_user: "cka000029"
-question9_student_home: "/home/cka000029"
+question9_student_user: "cka000009"
+question9_student_home: "/home/cka000009"
 question9_namespace: "default"
-question9_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+question9_image: "docker.io/library/httpd:latest"
 
 # ==========================================
 # Question 10 配置 (frontend/backend namespace)
 # 使用单个用户访问两个 namespace
 # ==========================================
 question10_enabled: true
-question10_student_user: "cka000031"
-question10_student_home: "/home/cka000031"
+question10_student_user: "cka000010"
+question10_student_home: "/home/cka000010"
 question10_primary_namespace: "frontend"
 question10_secondary_namespace: "backend"
-question10_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+question10_image: "docker.io/library/httpd:latest"
 
 # ==========================================
 # Question 11 配置 (cert-manager namespace)
@@ -107,7 +107,7 @@ question12_enabled: true
 question12_student_user: "cka000012"
 question12_student_home: "/home/cka000012"
 question12_namespace: "nginx-static"
-question12_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+question12_image: "docker.io/library/nginx:alpine"
 
 # ==========================================
 # Question 14 配置 (relative-fawn namespace)
@@ -116,7 +116,7 @@ question14_enabled: true
 question14_student_user: "cka000014"
 question14_student_home: "/home/cka000014"
 question14_namespace: "relative-fawn"
-question14_image: "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+question14_image: "docker.io/library/httpd:latest"
 
 # ==========================================
 # CNI 配置

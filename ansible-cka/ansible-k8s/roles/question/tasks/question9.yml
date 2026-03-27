@@ -16,5 +16,5 @@
   import_tasks: manage-student-user.yml
   vars:
     student_namespace: "{{ question9_namespace | default('default') }}"
-    student_user: "{{ question9_student_user | default('cka000029') }}"
-    student_home: "{{ question9_student_home | default('/home/cka000029') }}"
+    student_user: "{{ question9_student_user | default('cka000009') }}"
+    student_home: "{{ question9_student_home | default('/home/cka000009') }}"

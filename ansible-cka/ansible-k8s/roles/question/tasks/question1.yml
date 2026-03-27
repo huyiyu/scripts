@@ -10,7 +10,7 @@
   import_tasks: manage-student-user.yml
   vars:
     student_namespace: "{{ question1_namespace | default('autoscale') }}"
-    student_user: "{{ question1_student_user | default('cka-autoscale') }}"
+    student_user: "{{ question1_student_user | default('cka000001') }}"
     student_home: "{{ question1_student_home | default('/home/cka-autoscale') }}"
 
 # ==========================================

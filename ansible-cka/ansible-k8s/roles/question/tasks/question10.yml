@@ -15,8 +15,8 @@
   import_tasks: manage-student-user.yml
   vars:
     student_namespace: "{{ question10_primary_namespace | default('frontend') }}"
-    student_user: "{{ question10_student_user | default('cka000031') }}"
-    student_home: "{{ question10_student_home | default('/home/cka000031') }}"
+    student_user: "{{ question10_student_user | default('cka000010') }}"
+    student_home: "{{ question10_student_home | default('/home/cka000010') }}'"
     additional_namespaces:
       - "{{ question10_secondary_namespace | default('backend') }}"
 
@@ -87,34 +87,34 @@
 # ==========================================
 - name: "创建 netpol 目录"
   file:
-    path: "{{ question10_student_home | default('/home/cka000031') }}/netpol"
+    path: "{{ question10_student_home | default('/home/cka000010') }}/netpol"
     state: directory
-    owner: "{{ question10_student_user | default('cka000031') }}"
-    group: "{{ question10_student_user | default('cka000031') }}"
+    owner: "{{ question10_student_user | default('cka000010') }}"
+    group: "{{ question10_student_user | default('cka000010') }}"
     mode: '0755'
 
 - name: "生成 netpol1.yaml（过于宽松）"
   template:
     src: question10/netpol1.yaml.j2
-    dest: "{{ question10_student_home | default('/home/cka000031') }}/netpol/netpol1.yaml"
-    owner: "{{ question10_student_user | default('cka000031') }}"
-    group: "{{ question10_student_user | default('cka000031') }}"
+    dest: "{{ question10_student_home | default('/home/cka000010') }}/netpol/netpol1.yaml"
+    owner: "{{ question10_student_user | default('cka000010') }}"
+    group: "{{ question10_student_user | default('cka000010') }}"
     mode: '0644'
 
 - name: "生成 netpol2.yaml（正确答案）"
   template:
     src: question10/netpol2.yaml.j2
-    dest: "{{ question10_student_home | default('/home/cka000031') }}/netpol/netpol2.yaml"
-    owner: "{{ question10_student_user | default('cka000031') }}"
-    group: "{{ question10_student_user | default('cka000031') }}"
+    dest: "{{ question10_student_home | default('/home/cka000010') }}/netpol/netpol2.yaml"
+    owner: "{{ question10_student_user | default('cka000010') }}"
+    group: "{{ question10_student_user | default('cka000010') }}"
     mode: '0644'
 
 - name: "生成 netpol3.yaml（不符合要求）"
   template:
     src: question10/netpol3.yaml.j2
-    dest: "{{ question10_student_home | default('/home/cka000031') }}/netpol/netpol3.yaml"
-    owner: "{{ question10_student_user | default('cka000031') }}"
-    group: "{{ question10_student_user | default('cka000031') }}"
+    dest: "{{ question10_student_home | default('/home/cka000010') }}/netpol/netpol3.yaml"
+    owner: "{{ question10_student_user | default('cka000010') }}"
+    group: "{{ question10_student_user | default('cka000010') }}"
     mode: '0644'
 
 # ==========================================

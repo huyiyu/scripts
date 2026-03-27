@@ -163,6 +163,7 @@
   apt:
     name:
       - nginx
+      - htop
       - libnginx-mod-stream
     state: present
     update_cache: yes

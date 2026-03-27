@@ -31,72 +31,72 @@
   set_fact:
     ssh_config_content: |
       # Question 1 (cluster1)
-      Host cka000050
+      Host cka000001
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000050
+          User cka000001
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
       # Question 2 (cluster1)
-      Host cka000024
+      Host cka000002
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000024
+          User cka000002
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
       # Question 3 (cluster1)
-      Host cka000037
+      Host cka000003
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000037
+          User cka000003
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
       # Question 4 (cluster1)
-      Host cka000046
+      Host cka000004
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000046
+          User cka000004
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
       # Question 5 (cluster1)
-      Host cka000025
+      Host cka000005
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000025
+          User cka000005
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
       # Question 6 (cluster1)
-      Host cka000049
+      Host cka000006
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000049
+          User cka000006
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
       # Question 7 (cluster1)
-      Host cka000060
+      Host cka000007
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000060
+          User cka000007
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
       # Question 8 (cluster1)
-      Host cka000023
+      Host cka000008
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000023
+          User cka000008
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
       # Question 9 (cluster1)
-      Host cka000029
+      Host cka000009
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000029
+          User cka000009
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
       # Question 10 (cluster1)
-      Host cka000031
+      Host cka000010
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000031
+          User cka000010
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
@@ -107,17 +107,17 @@
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
-      # Question 14 (cluster1)
-      Host cka000014
-          HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
-          User cka000014
-          IdentityFile ~/.ssh/cka_ed25519
-          StrictHostKeyChecking no
-
       # Question 12 (cluster1)
       Host cka000012
           HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
           User cka000012
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+
+      # Question 14 (cluster1)
+      Host cka000014
+          HostName {{ hostvars[groups['cluster1'][0]]['ansible_host'] }}
+          User cka000014
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
@@ -128,17 +128,17 @@
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
 
-      # Question 16 (cluster3)
-      Host cka000016
-          HostName {{ hostvars[groups['cluster3'][0]]['ansible_host'] }}
-          User cka000016
-          IdentityFile ~/.ssh/cka_ed25519
-          StrictHostKeyChecking no
-
       # Question 15 (cluster3)
       Host cka000015
           HostName {{ hostvars[groups['cluster3'][0]]['ansible_host'] }}
           User cka000015
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+
+      # Question 16 (cluster3)
+      Host cka000016
+          HostName {{ hostvars[groups['cluster3'][0]]['ansible_host'] }}
+          User cka000016
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
   run_once: true
@@ -282,13 +282,13 @@
          cp /root/cka-ssh-info/ssh_config ~/.ssh/config
       
       3. 连接示例:
-         ssh cka000050    # Question 1
-         ssh cka000024    # Question 2
+         ssh cka000001    # Question 1
+         ssh cka000002    # Question 2
          ssh cka000013    # Question 13 (cluster2)
          ssh cka000015    # Question 15 (cluster3)
       
       或者直接使用:
-         ssh -i ~/.ssh/cka_ed25519 cka000050@<IP>
+         ssh -i ~/.ssh/cka_ed25519 cka000001@<IP>
   run_once: true
 
 - name: "显示分隔线"

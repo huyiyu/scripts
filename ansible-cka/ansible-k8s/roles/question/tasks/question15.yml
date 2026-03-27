@@ -18,9 +18,22 @@
     create_home: yes
     shell: /bin/bash
 
-- name: "授予 {{ question15_student_user | default('cka000015') }} sudo 权限（允许 sudo -i）"
+- name: "授予 {{ question15_student_user | default('cka000015') }} sudo 权限（故障排查需要）"
   copy:
-    content: "{{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD:ALL"
+    content: |
+      # CKA Q15 - etcd 故障排查
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /usr/bin/kubectl
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /usr/local/bin/kubectl
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /bin/systemctl
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /usr/bin/journalctl
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /bin/cat /etc/kubernetes/manifests/*.yaml
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /usr/bin/cat /etc/kubernetes/manifests/*.yaml
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /usr/bin/vim /etc/kubernetes/manifests/*.yaml
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /usr/bin/vi /etc/kubernetes/manifests/*.yaml
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /usr/bin/nano /etc/kubernetes/manifests/*.yaml
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /bin/ls /etc/kubernetes/manifests/
+      {{ question15_student_user | default('cka000015') }} ALL=(ALL) NOPASSWD: /usr/bin/ls /etc/kubernetes/manifests/
     dest: "/etc/sudoers.d/{{ question15_student_user | default('cka000015') }}"
     mode: '0440'
     validate: 'visudo -cf %s'

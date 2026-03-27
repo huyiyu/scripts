@@ -15,5 +15,5 @@ spec:
     spec:
       containers:
         - name: nginx
-          image: {{ question5_image | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm') }}
+          image: {{ question5_image | default('docker.io/library/httpd:latest') }}
           # 注意：当前没有暴露端口，考生需要添加 containerPort: 80

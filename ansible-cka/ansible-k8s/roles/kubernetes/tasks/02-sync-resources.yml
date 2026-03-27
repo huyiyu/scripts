@@ -34,6 +34,7 @@
     - "{{ offline_packages_path }}/cni"
     - "{{ offline_packages_path }}/k8s"
     - "{{ offline_packages_path }}/calico"
+    - "{{ offline_packages_path }}/docker"
     - "{{ offline_images_path }}"
 
 # ==========================================

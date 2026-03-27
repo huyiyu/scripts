@@ -15,7 +15,7 @@
   import_tasks: manage-student-user.yml
   vars:
     student_namespace: "{{ question5_namespace | default('spline-reticulator') }}"
-    student_user: "{{ question5_student_user | default('cka-spline-reticulator') }}"
+    student_user: "{{ question5_student_user | default('cka000005') }}"
     student_home: "{{ question5_student_home | default('/home/cka-spline-reticulator') }}"
 
 # ==========================================

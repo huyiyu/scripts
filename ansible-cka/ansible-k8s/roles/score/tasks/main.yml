@@ -15,17 +15,6 @@
   delegate_to: k8s-node01
   register: cluster1_admin_conf
 
-- name: "从 cluster1 读取 SSH 私钥"
-  slurp:
-    src: /root/.ssh/cka_ed25519
-  delegate_to: k8s-node01
-  register: cka_ssh_key
-
-- name: "从 cluster1 读取 SSH 公钥"
-  slurp:
-    src: /root/.ssh/cka_ed25519.pub
-  delegate_to: k8s-node01
-  register: cka_ssh_pubkey
 
 # ==========================================
 # 2. 生成本地评分脚本
@@ -115,7 +104,7 @@
       11.0.1.100 cluster1 kubernetes cluster1-endpoint
       11.0.1.101 cluster2 
       11.0.1.102 cluster3
-      # CKA 题目域名 - 指向 cluster1 Ingress
+      # CKA 题目域名 - 指向 cluster1 Ingress/Gateway
       11.0.1.100 example.org
       11.0.1.100 gateway.web.k8s.local
       11.0.1.100 ingress.web.k8s.local
@@ -125,6 +114,18 @@
 # ==========================================
 # 5. 创建 SSH 配置和密钥
 # ==========================================
+- name: "从 localhost 读取 SSH 私钥"
+  slurp:
+    src: /root/.ssh/cka_ed25519
+  delegate_to: localhost
+  register: cka_ssh_key
+
+- name: "从 localhost 读取 SSH 公钥"
+  slurp:
+    src: /root/.ssh/cka_ed25519.pub
+  delegate_to: localhost
+  register: cka_ssh_pubkey
+
 - name: "创建 .ssh 目录"
   file:
     path: "/home/cka000016/.ssh"
@@ -152,41 +153,115 @@
 - name: "部署 SSH config"
   copy:
     content: |
-      # Question 1-12 (cluster1)
-      Host cka000050 cka000024 cka000037 cka000046 cka000025 cka000049 cka000060 cka000023 cka000029 cka000031 cka000011 cka000012 cka000014
+      # Question 1 (cluster1)
+      Host cka000001
           HostName 11.0.1.100
-          User cka000050
+          User cka000001
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 2 (cluster1)
+      Host cka000002
+          HostName 11.0.1.100
+          User cka000002
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 3 (cluster1)
+      Host cka000003
+          HostName 11.0.1.100
+          User cka000003
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 4 (cluster1)
+      Host cka000004
+          HostName 11.0.1.100
+          User cka000004
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 5 (cluster1)
+      Host cka000005
+          HostName 11.0.1.100
+          User cka000005
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 6 (cluster1)
+      Host cka000006
+          HostName 11.0.1.100
+          User cka000006
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 7 (cluster1)
+      Host cka000007
+          HostName 11.0.1.100
+          User cka000007
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 8 (cluster1)
+      Host cka000008
+          HostName 11.0.1.100
+          User cka000008
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 9 (cluster1)
+      Host cka000009
+          HostName 11.0.1.100
+          User cka000009
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 10 (cluster1)
+      Host cka000010
+          HostName 11.0.1.100
+          User cka000010
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 11 (cluster1)
+      Host cka000011
+          HostName 11.0.1.100
+          User cka000011
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 12 (cluster1)
+      Host cka000012
+          HostName 11.0.1.100
+          User cka000012
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
       
       # Question 13 (cluster2)
       Host cka000013
           HostName 11.0.1.101
+          User cka000013
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
       
-      # Question 15-16 (cluster3 - localhost)
-      Host cka000015 cka000016
-          HostName 127.0.0.1
-          IdentityFile ~/.ssh/cka_ed25519
-          StrictHostKeyChecking no
-      
-      # Cluster aliases
-      Host cluster1
+      # Question 14 (cluster1)
+      Host cka000014
           HostName 11.0.1.100
-          User root
+          User cka000014
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
       
-      Host cluster2
-          HostName 11.0.1.101
-          User root
-          IdentityFile ~/.ssh/cka_ed25519
-          StrictHostKeyChecking no
-      
-      Host cluster3
+      # Question 15 (cluster3)
+      Host cka000015
           HostName 127.0.0.1
-          User root
+          User cka000015
+          IdentityFile ~/.ssh/cka_ed25519
+          StrictHostKeyChecking no
+      
+      # Question 16 (cluster3)
+      Host cka000016
+          HostName 127.0.0.1
+          User cka000016
           IdentityFile ~/.ssh/cka_ed25519
           StrictHostKeyChecking no
     dest: "/home/cka000016/.ssh/config"

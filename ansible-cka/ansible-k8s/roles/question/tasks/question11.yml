@@ -20,7 +20,7 @@
     student_home: "{{ question11_student_home | default('/home/cka000011') }}"
 
 # ==========================================
-# 2. 部署 cert-manager（使用在线 YAML，镜像已通过离线包导入）
+# 2. 部署 cert-manager（作为准备条件）
 # ==========================================
 - name: "检查 cert-manager 是否已部署"
   shell: |
@@ -49,7 +49,7 @@
   when: cert_manager_check.stdout == "NOT_FOUND"
 
 # ==========================================
-# 3. 创建示例 Certificate（供学生查看）
+# 3. 创建示例 Certificate（作为准备条件，供学生查看和学习）
 # ==========================================
 - name: "创建示例 Certificate"
   shell: |
@@ -94,3 +94,33 @@
     KUBECONFIG: /etc/kubernetes/admin.conf
   ignore_errors: yes
   changed_when: false
+
+# ==========================================
+# 4. 配置 nginx 虚拟主机（使用现有 nginx 暴露 /home/cka000011 目录）
+# ==========================================
+- name: "创建 nginx 虚拟主机配置目录"
+  file:
+    path: /etc/nginx/conf.d
+    state: directory
+    mode: '0755'
+
+- name: "创建 nginx 虚拟主机配置"
+  copy:
+    dest: /etc/nginx/conf.d/q11-fileserver.conf
+    content: |
+      server {
+          listen 18080;
+          server_name localhost;
+          
+          location / {
+              root /home/cka000011;
+              autoindex on;
+              autoindex_exact_size off;
+              autoindex_localtime on;
+          }
+      }
+
+- name: "重载 nginx"
+  shell: |
+    nginx -t && systemctl reload nginx || true
+  ignore_errors: yes

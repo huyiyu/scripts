@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: apache
-          image: {{ question1_image | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm') }}
+          image: {{ question1_image | default('docker.io/library/httpd:latest') }}
           ports:
             - containerPort: 80
           resources:

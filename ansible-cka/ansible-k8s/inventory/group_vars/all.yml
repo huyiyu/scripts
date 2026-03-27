@@ -95,15 +95,27 @@ calico_images:
 cka_images:
   - "docker.io/traefik:v2.10.7"
   - "rancher/local-path-provisioner:v0.0.24"
-  - "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox-unstable"
   - "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:echoserver"
-  - "registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:httpd-booworm"
+  - "docker.io/library/httpd:latest"
   # ArgoCD 7.7.3 所需镜像
   - "quay.io/argoproj/argocd:v2.13.0"
   - "ghcr.io/dexidp/dex:v2.41.1"
   - "public.ecr.aws/docker/library/redis:7.4.1-alpine"
   # NGINX Gateway Fabric (Gateway API Controller)
   - "ghcr.io/nginx/nginx-gateway-fabric:2.4.2"
+  - "ghcr.io/nginx/nginx-gateway-fabric/nginx:2.4.2"
+  # cert-manager (Q11)
+  - "quay.io/jetstack/cert-manager-controller:v1.13.0"
+  - "quay.io/jetstack/cert-manager-cainjector:v1.13.0"
+  - "quay.io/jetstack/cert-manager-webhook:v1.13.0"
+  # Q12 ConfigMap TLS
+  - "docker.io/library/nginx:alpine"
+  # Q14 WordPress Resources
+  - "docker.io/library/wordpress:latest"
+  # Q3 Sidecar (busybox stable版本作为备选)
+  - "docker.io/library/busybox:stable"
+  
+
 
 # ------------------------------------------
 # 部署用户配置（使用 root 直接部署）

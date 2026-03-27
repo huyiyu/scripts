@@ -13,7 +13,7 @@ ansible-playbook -i inventory/hosts.ini playbooks/question.yml --limit cluster1
 
 ### Question 1 - HPA Autoscale (cluster1)
 
-**考生用户**: `cka000050`
+**考生用户**: `cka000001`
 
 **资源**:
 - Namespace: `autoscale`
@@ -21,13 +21,13 @@ ansible-playbook -i inventory/hosts.ini playbooks/question.yml --limit cluster1
 
 **要求**: 创建 HPA，目标 CPU 50%，min=1, max=4，scaleDown 稳定窗口 30s
 
-**登录**: `ssh cka000050@11.0.1.100`
+**登录**: `ssh cka000001@11.0.1.100`
 
 ---
 
 ### Question 2 - Ingress (cluster1)
 
-**考生用户**: `cka000024`
+**考生用户**: `cka000002`
 
 **资源**:
 - Namespace: `sound-repeater`
@@ -42,13 +42,13 @@ ansible-playbook -i inventory/hosts.ini playbooks/question.yml --limit cluster1
 
 **验证**: `curl http://example.org/echo`
 
-**登录**: `ssh cka000024@11.0.1.100`
+**登录**: `ssh cka000002@11.0.1.100`
 
 ---
 
 ### Question 9 - Gateway (cluster1)
 
-**考生用户**: `cka000029`
+**考生用户**: `cka000009`
 
 **依赖**: 需要 Question 2 基础设施（Traefik + Nginx 反向代理）已部署
 
@@ -79,13 +79,13 @@ kubectl get httproute web-route -n default
 curl -k https://gateway.web.k8s.local/
 ```
 
-**登录**: `ssh cka000029@11.0.1.100`
+**登录**: `ssh cka000009@11.0.1.100`
 
 ---
 
 ### Question 3 - Sidecar (cluster1)
 
-**考生用户**: `cka000037`
+**考生用户**: `cka000003`
 
 **资源**:
 - Namespace: `default`
@@ -98,13 +98,13 @@ curl -k https://gateway.web.k8s.local/
 
 **验证**: `kubectl logs <pod-name> -c sidecar`
 
-**登录**: `ssh cka000037@11.0.1.100`
+**登录**: `ssh cka000003@11.0.1.100`
 
 ---
 
 ### Question 4 - StorageClass (cluster1)
 
-**考生用户**: `cka000046`
+**考生用户**: `cka000004`
 
 **资源**:
 - local-path-provisioner 已部署
@@ -116,13 +116,13 @@ curl -k https://gateway.web.k8s.local/
 - volumeBindingMode: `WaitForFirstConsumer`
 - 设置为默认 StorageClass
 
-**登录**: `ssh cka000046@11.0.1.100`
+**登录**: `ssh cka000004@11.0.1.100`
 
 ---
 
 ### Question 5 - Service (cluster1)
 
-**考生用户**: `cka000025`
+**考生用户**: `cka000005`
 
 **资源**:
 - Namespace: `spline-reticulator`
@@ -135,13 +135,13 @@ curl -k https://gateway.web.k8s.local/
 
 **验证**: `kubectl get svc -n spline-reticulator front-end-svc`
 
-**登录**: `ssh cka000025@11.0.1.100`
+**登录**: `ssh cka000005@11.0.1.100`
 
 ---
 
 ### Question 6 - PriorityClass (cluster1)
 
-**考生用户**: `cka000049`
+**考生用户**: `cka000006`
 
 **资源**:
 - Namespace: `priority`
@@ -157,13 +157,13 @@ curl -k https://gateway.web.k8s.local/
 
 **验证**: `kubectl get -n priority pod <pod-name> -o jsonpath='{.spec.priority}'`
 
-**登录**: `ssh cka000049@11.0.1.100`
+**登录**: `ssh cka000006@11.0.1.100`
 
 ---
 
 ### Question 7 - Helm ArgoCD (cluster1)
 
-**考生用户**: `cka000060`
+**考生用户**: `cka000007`
 
 **资源**:
 - Namespace: `argocd`
@@ -178,13 +178,13 @@ curl -k https://gateway.web.k8s.local/
 
 **验证**: `kubectl get pods -n argocd`
 
-**登录**: `ssh cka000060@11.0.1.100`
+**登录**: `ssh cka000007@11.0.1.100`
 
 ---
 
 ### Question 8 - PVC (cluster1)
 
-**考生用户**: `cka000023`
+**考生用户**: `cka000008`
 
 **资源**:
 - Namespace: `mariadb`
@@ -201,13 +201,13 @@ curl -k https://gateway.web.k8s.local/
 
 **验证**: `kubectl get pvc -n mariadb` 和 `kubectl get pods -n mariadb`
 
-**登录**: `ssh cka000023@11.0.1.100`
+**登录**: `ssh cka000008@11.0.1.100`
 
 ---
 
 ### Question 9 - Gateway (cluster1)
 
-**考生用户**: `cka000029`
+**考生用户**: `cka000009`
 
 **资源**:
 - Namespace: `default`
@@ -225,7 +225,7 @@ curl -k https://gateway.web.k8s.local/
 
 **验证**: `kubectl get gateway -n default` 和 `kubectl get httproute -n default`
 
-**登录**: `ssh cka000029@11.0.1.100`
+**登录**: `ssh cka000009@11.0.1.100`
 
 ---
 
@@ -233,15 +233,15 @@ curl -k https://gateway.web.k8s.local/
 
 | 题号 | 名称 | 考生用户 | 部署目标 | 状态 |
 |------|------|----------|----------|------|
-| 1 | HPA Autoscale | cka000050 | cluster1 | ✅ 已完成 |
-| 2 | Ingress | cka000024 | cluster1 | ✅ 已完成 |
-| 3 | Sidecar | cka000037 | cluster1 | ✅ 已完成 |
-| 4 | StorageClass | cka000046 | cluster1 | ✅ 已完成 |
-| 5 | Service | cka000025 | cluster1 | ✅ 已完成 |
-| 6 | PriorityClass | cka000049 | cluster1 | ✅ 已完成 |
-| 7 | Helm ArgoCD | cka000060 | cluster1 | ✅ 已完成 |
-| 8 | PVC | cka000023 | cluster1 | ✅ 已完成 |
-| 9 | Gateway | cka000029 | cluster1 | ✅ 已完成 |
+| 1 | HPA Autoscale | cka000001 | cluster1 | ✅ 已完成 |
+| 2 | Ingress | cka000002 | cluster1 | ✅ 已完成 |
+| 3 | Sidecar | cka000003 | cluster1 | ✅ 已完成 |
+| 4 | StorageClass | cka000004 | cluster1 | ✅ 已完成 |
+| 5 | Service | cka000005 | cluster1 | ✅ 已完成 |
+| 6 | PriorityClass | cka000006 | cluster1 | ✅ 已完成 |
+| 7 | Helm ArgoCD | cka000007 | cluster1 | ✅ 已完成 |
+| 8 | PVC | cka000008 | cluster1 | ✅ 已完成 |
+| 9 | Gateway | cka000009 | cluster1 | ✅ 已完成 |
 | 10-16 | 待添加 | - | - | ⏳ 待开发 |
 
 ## 配置说明
@@ -251,40 +251,40 @@ curl -k https://gateway.web.k8s.local/
 ```yaml
 # Question 1
 question1_enabled: true
-question1_student_user: "cka000050"
+question1_student_user: "cka000001"
 
 # Question 2
 question2_enabled: true
-question2_student_user: "cka000024"
+question2_student_user: "cka000002"
 
 # Question 3
 question3_enabled: true
-question3_student_user: "cka000037"
+question3_student_user: "cka000003"
 
 # Question 4
 question4_enabled: true
-question4_student_user: "cka000046"
+question4_student_user: "cka000004"
 question4_infra_enabled: true
 
 # Question 5
 question5_enabled: true
-question5_student_user: "cka000025"
+question5_student_user: "cka000005"
 
 # Question 6
 question6_enabled: true
-question6_student_user: "cka000049"
+question6_student_user: "cka000006"
 
 # Question 7
 question7_enabled: true
-question7_student_user: "cka000060"
+question7_student_user: "cka000007"
 
 # Question 8
 question8_enabled: true
-question8_student_user: "cka000023"
+question8_student_user: "cka000008"
 
 # Question 9
 question9_enabled: true
-question9_student_user: "cka000029"
+question9_student_user: "cka000009"
 question9_infra_enabled: true  # 依赖 Question 2 的 Traefik
 ```
 

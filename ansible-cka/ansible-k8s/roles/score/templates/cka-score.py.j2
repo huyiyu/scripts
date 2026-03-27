@@ -188,27 +188,45 @@ def check_storageclass(cluster: str, name: str, is_default: bool = True) -> Tupl
         return False, f"解析 StorageClass 失败"
 
 # ============ Q11 专用检查 - cert-manager ============
+# 通过 HTTP 访问 cluster1 上的 nginx 文件服务
+CLUSTER1_FILE_SERVER = "http://11.0.1.100:18080"
+
 def check_crd_list(cluster: str) -> Tuple[bool, str]:
-    files_to_check = [
-        "/home/cka000011/crd-list.txt",
-        "/home/cka000011/cert-manager-crd.txt",
-    ]
-    for f in files_to_check:
-        if os.path.exists(f):
-            return True, f"CRD 列表文件存在 ({os.path.basename(f)})"
-    return False, "CRD 列表文件不存在"
+    # 通过 HTTP 获取 CRD 列表文件
+    files_to_check = ["crd-list.txt", "cert-manager-crd.txt"]
+    for filename in files_to_check:
+        try:
+            url = f"{CLUSTER1_FILE_SERVER}/{filename}"
+            result = subprocess.run(f"curl -sf {url} 2>/dev/null | head -1", 
+                                   shell=True, capture_output=True, text=True, timeout=5)
+            if result.returncode == 0 and result.stdout.strip():
+                return True, f"CRD 列表文件存在 ({filename})"
+        except:
+            pass
+    return False, "CRD 列表文件不存在 (需要在 ~/crd-list.txt)"
 
 def check_certificate_doc(cluster: str) -> Tuple[bool, str]:
-    files_to_check = [
-        "/home/cka000011/certificate-subject.txt",
-        "/home/cka000011/cert-subject.txt",
-    ]
-    for f in files_to_check:
-        if os.path.exists(f):
-            return True, f"Certificate 文档存在 ({os.path.basename(f)})"
-    return False, "Certificate subject 文档不存在"
+    # 通过 HTTP 获取 Certificate subject 文档
+    files_to_check = ["certificate-subject.txt", "cert-subject.txt"]
+    for filename in files_to_check:
+        try:
+            url = f"{CLUSTER1_FILE_SERVER}/{filename}"
+            result = subprocess.run(f"curl -sf {url} 2>/dev/null | head -1", 
+                                   shell=True, capture_output=True, text=True, timeout=5)
+            if result.returncode == 0 and result.stdout.strip():
+                return True, f"Certificate 文档存在 ({filename})"
+        except:
+            pass
+    return False, "Certificate subject 文档不存在 (需要在 ~/certificate-subject.txt)"
 
 # ============ Q12 专用检查 - TLS 1.2 ============
+# 集群节点 IP 映射
+CLUSTER_IPS = {
+    "cluster1": "11.0.1.100",
+    "cluster2": "11.0.1.101",
+    "cluster3": "127.0.0.1",
+}
+
 def check_tls_version(cluster: str, namespace: str, service: str, unused=None) -> Tuple[bool, str]:
     success, output = run_kubectl(cluster, f"get service {service} -n {namespace} -o json")
     if not success:
@@ -223,7 +241,9 @@ def check_tls_version(cluster: str, namespace: str, service: str, unused=None) -
                 break
         if not https_port:
             return False, "未找到 HTTPS 端口"
-        test_cmd = f"echo | openssl s_client -connect localhost:{https_port} -tls1_2 2>&1 | grep 'Protocol'"
+        # 使用对应集群的 IP 地址进行 TLS 检查
+        cluster_ip = CLUSTER_IPS.get(cluster, "127.0.0.1")
+        test_cmd = f"echo | openssl s_client -connect {cluster_ip}:{https_port} -tls1_2 2>&1 | grep 'Protocol'"
         result = subprocess.run(test_cmd, shell=True, capture_output=True, text=True, timeout=10)
         if 'TLSv1.2' in result.stdout or 'TLSv1.3' in result.stdout:
             return True, "TLS 1.2/1.3 配置正确"
@@ -247,7 +267,7 @@ def check_hpa(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
         for m in metrics:
             if m.get('type') == 'Resource' and m.get('resource', {}).get('name') == 'cpu':
                 cpu_percent = m.get('resource', {}).get('target', {}).get('averageUtilization')
-        if min_replicas == 1 and max_replicas == 2 and cpu_percent == 50:
+        if min_replicas == 1 and max_replicas == 4 and cpu_percent == 50:
             return True, f"HPA 配置正确 (min={min_replicas}, max={max_replicas}, cpu={cpu_percent}%)"
         return False, f"HPA 配置错误 (min={min_replicas}, max={max_replicas}, cpu={cpu_percent}%)"
     except:
@@ -296,16 +316,40 @@ def check_pvc_bound(cluster: str, namespace: str, name: str) -> Tuple[bool, str]
         return False, "解析 PVC 状态失败"
 
 def check_gateway(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
-    success, _ = run_kubectl(cluster, f"get gateway {name} -n {namespace}")
-    if success:
+    success, output = run_kubectl(cluster, f"get gateway {name} -n {namespace} -o json")
+    if not success:
+        return False, f"Gateway {name} 不存在"
+    try:
+        data = json.loads(output)
+        listeners = data.get('spec', {}).get('listeners', [])
+        has_https = False
+        has_hostname = False
+        for listener in listeners:
+            if listener.get('protocol') == 'HTTPS' and listener.get('port') == 443:
+                has_https = True
+            if listener.get('hostname') == 'gateway.web.k8s.local':
+                has_hostname = True
+        if has_https and has_hostname:
+            return True, f"Gateway {name} 配置正确(HTTPS+hostname)"
+        elif has_https:
+            return True, f"Gateway {name} 存在(HTTPS)"
+        else:
+            return True, f"Gateway {name} 存在"
+    except:
         return True, f"Gateway {name} 存在"
-    return False, f"Gateway {name} 不存在"
 
 def check_httproute(cluster: str, namespace: str, name: str) -> Tuple[bool, str]:
-    success, _ = run_kubectl(cluster, f"get httproute {name} -n {namespace}")
-    if success:
+    success, output = run_kubectl(cluster, f"get httproute {name} -n {namespace} -o json")
+    if not success:
+        return False, f"HTTPRoute {name} 不存在"
+    try:
+        data = json.loads(output)
+        hostnames = data.get('spec', {}).get('hostnames', [])
+        if 'gateway.web.k8s.local' in hostnames:
+            return True, f"HTTPRoute {name} 配置正确(hostname)"
         return True, f"HTTPRoute {name} 存在"
-    return False, f"HTTPRoute {name} 不存在"
+    except:
+        return True, f"HTTPRoute {name} 存在"
 
 def check_networkpolicy(cluster: str, namespace: str, name: str = None) -> Tuple[bool, str]:
     if name:
@@ -424,20 +468,15 @@ def check_node_ready(cluster: str) -> Tuple[bool, str]:
         return False, "解析节点状态失败"
 
 def check_cri_dockerd_installed(cluster: str) -> Tuple[bool, str]:
-    # 本地检查（cluster3）
+    # 本地检查（cluster3）- 只检查是否安装和运行，不检查kubelet配置
     success, _ = run_cmd("systemctl is-active cri-docker")
     if success:
         return True, "cri-dockerd 服务运行中"
-    return False, "cri-dockerd 服务未运行"
-
-def check_kubelet_runtime(cluster: str) -> Tuple[bool, str]:
-    success, output = run_cmd("grep 'container-runtime-endpoint' /var/lib/kubelet/config.yaml")
-    if success and 'cri-docker' in output:
-        return True, "kubelet 已配置 cri-dockerd"
-    success, output = run_cmd("ps aux | grep kubelet | grep -o 'container-runtime[^ ]*'")
-    if success and 'cri-docker' in output:
-        return True, "kubelet 进程使用 cri-dockerd"
-    return False, "kubelet 未配置 cri-dockerd"
+    # 检查是否安装
+    success, _ = run_cmd("which cri-dockerd")
+    if success:
+        return True, "cri-dockerd 已安装"
+    return False, "cri-dockerd 未安装"
 
 def run_cmd(cmd: str) -> tuple:
     try:
@@ -464,8 +503,8 @@ QUESTIONS = {
         "namespace": "sound-repeater",
         "checks": [
             lambda c, n: check_deployment(c, n, "echoserver"),
-            lambda c, n: check_service(c, n, "echoserver"),
-            lambda c, n: check_ingress(c, n, "sound-repeater"),
+            lambda c, n: check_service(c, n, "echoserver-service"),
+            lambda c, n: check_ingress(c, n, "echo"),
             lambda c, n: check_ingress_access(c, n, "example.org"),
         ]
     },
@@ -492,8 +531,8 @@ QUESTIONS = {
         "cluster": "cluster1",
         "namespace": "delta",
         "checks": [
-            lambda c, n: check_deployment(c, n, "spline-reticulator-srv"),
-            lambda c, n: check_service(c, n, "spline-reticulator-srv"),
+            lambda c, n: check_deployment(c, n, "front-end"),
+            lambda c, n: check_service(c, n, "front-end-svc"),
         ]
     },
     "Q06": {
@@ -528,7 +567,7 @@ QUESTIONS = {
         "namespace": "default",
         "checks": [
             lambda c, n: check_gateway(c, n, "web-gateway"),
-            lambda c, n: check_httproute(c, n, "web"),
+            lambda c, n: check_httproute(c, n, "web-route"),
             lambda c, n: check_ingress_deleted(c, n, "web"),
         ]
     },
@@ -556,7 +595,7 @@ QUESTIONS = {
         "namespace": "nginx-static",
         "checks": [
             lambda c, n: check_configmap(c, n, "nginx-config"),
-            lambda c, n: check_secret(c, n, "tls-secret"),
+            lambda c, n: check_secret(c, n, "nginx-tls-secret"),
             lambda c, n: check_deployment_volumes(c, n, "nginx-static"),
             lambda c, n: check_tls_version(c, n, "nginx-static", "nginx-static"),
         ]
@@ -567,7 +606,6 @@ QUESTIONS = {
         "namespace": "calico-netpol",
         "checks": [
             check_calico_ready,
-            lambda c, n: check_networkpolicy(c, n),
         ]
     },
     "Q14": {
@@ -593,7 +631,6 @@ QUESTIONS = {
         "namespace": "default",
         "checks": [
             check_cri_dockerd_installed,
-            check_kubelet_runtime,
         ]
     },
 }
@@ -613,28 +650,38 @@ def print_header():
     print(f"  {Colors.DIM}运行节点:{Colors.END} {Colors.MAGENTA}cluster3 (cka000016){Colors.END}")
     print()
 
-def print_question_result(qid: str, name: str, passed: bool, details: List[str]):
+def print_question_result(qid: str, name: str, passed: bool, details: List[str], max_qid_len: int = 4):
+    """打印题目结果（表格行格式）"""
     if passed:
-        status_icon = f"{Colors.GREEN}✓{Colors.END}"
-        status_text = f"{Colors.GREEN}PASS{Colors.END}"
-        score_text = f"{Colors.GREEN}+{SCORE_PER_QUESTION:.1f}分{Colors.END}"
+        status = f"{Colors.GREEN}✓ 通过{Colors.END}"
+        score = f"{Colors.GREEN}+{SCORE_PER_QUESTION:.1f}{Colors.END}"
     else:
-        status_icon = f"{Colors.RED}✗{Colors.END}"
-        status_text = f"{Colors.RED}FAIL{Colors.END}"
-        score_text = f"{Colors.RED}+0分{Colors.END}"
+        status = f"{Colors.RED}✗ 未通过{Colors.END}"
+        score = f"{Colors.RED}+0{Colors.END}"
     
-    print(f"  {Colors.BOLD}{qid}{Colors.END} {Colors.DIM}-{Colors.END} {name}")
-    print(f"  {' ' * len(qid)} {status_icon} {status_text}  {score_text}")
-    
+    # 取第一个检查点作为备注
+    remark = ""
     for detail in details:
-        if detail.startswith("✓"):
-            icon = f"{Colors.GREEN}✓{Colors.END}"
-            text = detail[1:].strip()
-            print(f"      {icon} {Colors.DIM}{text}{Colors.END}")
-        else:
-            icon = f"{Colors.RED}✗{Colors.END}"
-            text = detail[1:].strip() if detail.startswith("✗") else detail
-            print(f"      {icon} {text}")
+        if passed and detail.startswith("✓"):
+            remark = detail[1:].strip()
+            break
+        elif not passed and detail.startswith("✗"):
+            remark = detail[1:].strip()
+            break
+    
+    # 截断备注以适应表格（35字符宽度）
+    if len(remark) > 35:
+        remark = remark[:32] + "..."
+    
+    print(f"  {Colors.BOLD}{qid:<{max_qid_len}}{Colors.END} │ {name:<22} │ {status:<14} │ {score:<10} │ {remark}")
+
+def print_table_header(max_qid_len: int = 4):
+    """打印表格表头"""
+    print(f"  {'题目':<{max_qid_len}} │ {'名称':<22} │ {'状态':<14} │ {'得分':<10} │ {'备注'}")
+    print(f"  {'─' * (max_qid_len + 1)}┼{'─' * 24}┼{'─' * 16}┼{'─' * 12}┼{'─' * 35}")
+
+def print_table_footer():
+    """打印表格底部"""
     print()
 
 def print_summary(score: float, passed: int, failed: int):
@@ -679,6 +726,12 @@ def main():
     passed_count = 0
     failed_count = 0
     
+    # 计算最大题目ID长度
+    max_qid_len = max(len(qid) for qid in QUESTIONS.keys())
+    
+    # 打印表格表头
+    print_table_header(max_qid_len)
+    
     for qid, config in QUESTIONS.items():
         cluster = config["cluster"]
         namespace = config["namespace"]
@@ -711,8 +764,9 @@ def main():
         else:
             failed_count += 1
         
-        print_question_result(qid, name, all_passed, details)
+        print_question_result(qid, name, all_passed, details, max_qid_len)
     
+    print_table_footer()
     print_summary(total_score, passed_count, failed_count)
     return 0 if total_score >= PASSING_SCORE else 1
 

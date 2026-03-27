@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: busybox
-          image: {{ question6_image | default('registry.cn-hangzhou.aliyuncs.com/fizz_1024/cka:busybox1.28') }}
+          image: {{ question6_image | default('docker.io/library/busybox:stable') }}
           imagePullPolicy: IfNotPresent
           args:
             - /bin/sh

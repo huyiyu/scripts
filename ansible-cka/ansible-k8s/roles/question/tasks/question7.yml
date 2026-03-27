@@ -15,7 +15,7 @@
   import_tasks: manage-student-user.yml
   vars:
     student_namespace: "{{ question7_namespace | default('argocd') }}"
-    student_user: "{{ question7_student_user | default('cka-argocd') }}"
+    student_user: "{{ question7_student_user | default('cka000007') }}"
     student_home: "{{ question7_student_home | default('/home/cka-argocd') }}"
 
 # ==========================================

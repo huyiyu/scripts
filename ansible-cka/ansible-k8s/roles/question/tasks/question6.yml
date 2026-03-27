@@ -15,7 +15,7 @@
   import_tasks: manage-student-user.yml
   vars:
     student_namespace: "{{ question6_namespace | default('priority') }}"
-    student_user: "{{ question6_student_user | default('cka-priority') }}"
+    student_user: "{{ question6_student_user | default('cka000006') }}"
     student_home: "{{ question6_student_home | default('/home/cka-priority') }}"
 
 # ==========================================

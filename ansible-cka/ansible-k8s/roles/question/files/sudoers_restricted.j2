@@ -1,0 +1,40 @@
+# CKA 考试用户 {{ student_user }} 的 sudo 权限
+# 严格限制仅允许答题所需命令
+
+# 允许 kubectl 命令
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/kubectl
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/local/bin/kubectl
+
+# 允许 helm 命令
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/local/bin/helm
+
+# 允许 crictl 命令
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/local/bin/crictl
+
+# 允许系统基本命令
+{{ student_user }} ALL=(ALL) NOPASSWD: /bin/systemctl
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/systemctl
+
+# 允许编辑 kubelet 配置（Q15/Q16 可能需要）
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/vim /var/lib/kubelet/config.yaml
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/vi /var/lib/kubelet/config.yaml
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/nano /var/lib/kubelet/config.yaml
+
+# 允许查看日志
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/journalctl
+
+# 允许 apt/dpkg（安装软件包）
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/apt
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/apt-get
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/dpkg
+
+# 允许基本文件操作
+{{ student_user }} ALL=(ALL) NOPASSWD: /bin/cat
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/cat
+{{ student_user }} ALL=(ALL) NOPASSWD: /bin/ls
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/ls
+{{ student_user }} ALL=(ALL) NOPASSWD: /bin/grep
+{{ student_user }} ALL=(ALL) NOPASSWD: /usr/bin/grep
+
+# 禁止其他所有命令
+{{ student_user }} ALL=(ALL) !root
